@@ -1,4 +1,4 @@
-package org.acme;
+package com.erpservices.nfe;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
