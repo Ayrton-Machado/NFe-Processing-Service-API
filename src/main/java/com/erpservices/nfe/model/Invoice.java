@@ -22,5 +22,4 @@ public class Invoice extends PanacheEntity {
 
     @OneToMany(mappedBy = "Invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     public List<InvoiceItem> items;
-
 }
