@@ -2,6 +2,41 @@
 
 Sistema para processamento de dados para emissão de NF-e com TDD, SRP e regra de negócio aplicada
 
+Rascunho:
+✅ Criar Geração de XML
+✅ Mockar SEFAZ com integracao Prod-Ready Assíncrona (email de pedido recebido)
+✅ Gerar Danfe
+✅ Enviar DANFE por email (Nfe Emitida)
+✅ Dockeirização
+✅ Migrar para PostgreSQL
+✅ Testes
+
+Diferencial: processamento assincrono, integracao com API SEFAZ real, envio por email e desenvolvimento com testes e SRP
+
+## SEFAZ
+ Ambiente de Homologação - versão 4.00:
+
+- Autorização:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeAutorizacao4?wsdl
+
+- Consulta Recibo:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeRetAutorizacao4?wsdl
+
+- Consulta Chave Acesso:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeConsultaProtocolo4?wsdl
+
+- Inutilização:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeInutilizacao4?wsdl
+
+- Consulta Status do Serviço:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeStatusServico4?wsdl
+
+- Consulta a Cadastro:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/CadConsultaCadastro4?wsdl
+
+- Registro de Eventos:
+https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeRecepcaoEvento4?wsdl
+
 ##  Autenticação
 
 **Autenticação Técnica (API):**
@@ -10,7 +45,6 @@ Sistema para processamento de dados para emissão de NF-e com TDD, SRP e regra d
 
 **Identificação Fiscal (Payload):**
 - CPF/CNPJ do destinatário: dado fiscal enviado no `POST /invoices`
-- CNPJ do emitente: configurado no sistema com certificado digital A1
 
 **Autenticação Fiscal (SEFAZ):**
 - Feita via certificado digital da empresa emitente
@@ -22,13 +56,6 @@ Sistema para processamento de dados para emissão de NF-e com TDD, SRP e regra d
 **Modelo:** Cada empresa com suas invoices ligadas por fk
 
 ```
-┌──────────────────────────┐
-│  suppliers (empresas)    │  ← Controle global de emitentes
-│  - id, cnpj, name        │
-└──────────────────────────┘
-           ↑
-           │ (FK: supplier_id)
-           │
 ┌──────────────────────────┐
 │  invoices (compartilhada)│  ← Uma tabela para todas as empresas
 │  - id, supplier_id       │     Isolamento por supplier_id
@@ -72,7 +99,7 @@ Kafka Event (processamento assíncrono)
 Retorna 202 Accepted (id + trackingId)
 ```
 
-## 🔄 Fluxo Técnico (Camadas)
+## 🔄Fluxo Técnico (Camadas)
 
 ```
 InvoiceResource → InvoiceRequestDTO
@@ -121,7 +148,6 @@ InvoiceProcessor
 
 **Consulta:**
 - `GET /invoices/tracking/{trackingId}` → status da invoice
-- Isolamento por `supplier_id` em todas as queries
 
 ## 🔍 Validações Principais (v0.1)
 
@@ -161,13 +187,6 @@ InvoiceProcessor
 - `GET /invoices` - Listar com filtros
 - `PATCH /invoices/{id}/status` - Atualizar status
 - `GET /invoices/stats` - Estatísticas
-
-### Suppliers
-- `POST /suppliers` - Criar fornecedor
-- `GET /suppliers/{cnpj}` - Buscar por CNPJ
-- `GET /suppliers` - Listar fornecedores
-- `PUT /suppliers/{id}` - Atualizar fornecedor
-- `PATCH /suppliers/{id}/status` - Ativar/Desativar
 
 ## 📁 Estrutura do Projeto
 
@@ -262,8 +281,7 @@ Salva no Banco → Publica no Kafka → Processa Assincronamente
 | **Fase 4** | Green phase
 | **Fase 5** | Refactor
 
-## Doc. ´How to run´ padrão (provisório)
-
+## RDoc. ´How to run´ padrão (provisório)
 You can run your application in dev mode that enables live coding using:
 
 ```shell script
@@ -310,6 +328,7 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 You can then execute your native executable with: `./target/NFe-Processing-Service-API-1.0.0-SNAPSHOT-runner`
 
 If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+
 
 ## Provided Code
 
