@@ -9,7 +9,8 @@ Rascunho:
 ✅ Enviar DANFE por email (Nfe Emitida)
 ✅ Dockeirização
 ✅ Migrar para PostgreSQL
-✅ Testes
+✅ Testes Durante a implementação
+✅ Criação de Front-end Angular com "Compra" simples que consuma a API.
 
 Diferencial: processamento assincrono, integracao com API SEFAZ real, envio por email e desenvolvimento com testes e SRP
 
