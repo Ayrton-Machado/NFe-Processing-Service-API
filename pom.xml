@@ -84,6 +84,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>br.com.swconsultoria</groupId>
+            <artifactId>java-nfe</artifactId>
+            <version>4.00.49</version>
+        </dependency>
     </dependencies>
 
     <build>

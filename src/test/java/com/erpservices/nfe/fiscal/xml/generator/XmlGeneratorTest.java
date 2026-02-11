@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import jakarta.inject.Inject;
 
+import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
@@ -17,6 +18,9 @@ public class XmlGeneratorTest {
     
     @Inject
     XmlGenerator xmlGenerator;
+
+    @Inject
+    XmlValidator xmlValidator;
 
     @Test
     public void testGenerateXml() {
@@ -39,6 +43,9 @@ public class XmlGeneratorTest {
         
         // Gerar XML
         String xml = xmlGenerator.generate(invoice);
+
+        // Validar XML
+        xmlValidator.validate(xml);
         
         // Imprimir XML
         System.out.println("=== XML GERADO ===");

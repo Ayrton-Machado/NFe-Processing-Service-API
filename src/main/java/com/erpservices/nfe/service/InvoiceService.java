@@ -8,17 +8,27 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
+
 import com.erpservices.nfe.dto.InvoiceItemRequestDTO;
 import com.erpservices.nfe.dto.InvoiceRequestDTO;
 import com.erpservices.nfe.dto.InvoiceResponseDTO;
+import com.erpservices.nfe.fiscal.xml.generator.XmlGenerator;
+import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class InvoiceService {
+
+    @Inject
+    XmlGenerator xmlGenerator;
+
+    @Inject 
+    XmlValidator xmlValidator;
 
     private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
@@ -60,6 +70,12 @@ public class InvoiceService {
         
         // Persiste no banco
         invoice.persist();
+
+        // Gera Xml
+        String xml = xmlGenerator.generate(invoice);
+
+        // Valida Estrutura Xml com .xsd
+        xmlValidator.validate(xml);
         
         // Monta resposta para o cliente
         InvoiceResponseDTO response = new InvoiceResponseDTO();
