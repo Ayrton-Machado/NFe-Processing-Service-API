@@ -7,10 +7,16 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import jakarta.inject.Inject;
 
+import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
+import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
+import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
+import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
+import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -23,7 +29,7 @@ public class XmlGeneratorTest {
     XmlValidator xmlValidator;
 
     @Test
-    public void testGenerateXml() {
+    public void testGenerateXml() throws Exception {
         // Criar invoice de teste
         Invoice invoice = new Invoice();
         invoice.invoiceNumber = "000000001";
@@ -40,16 +46,16 @@ public class XmlGeneratorTest {
         item.unitPrice = new BigDecimal("100.00");
         item.totalPrice = new BigDecimal("100.00");
         invoice.items = List.of(item);
-        
-        // Gerar XML
-        String xml = xmlGenerator.generate(invoice);
 
-        // Validar XML
-        xmlValidator.validate(xml);
+        // Criar Configuração da NFE
+        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, AmbienteEnum.HOMOLOGACAO);
+
+        // Gera Objeto Nfe 
+        TNFe nfe = xmlGenerator.generate(invoice, config);
+        String xml = XmlNfeUtil.objectToXml(nfe);
         
-        // Imprimir XML
-        System.out.println("=== XML GERADO ===");
-        System.out.println(xml);
+        // Valida Estrutura Xml com .xsd
+        xmlValidator.validate(xml);
         
         // Verificações básicas
         assert xml.contains("<NFe");

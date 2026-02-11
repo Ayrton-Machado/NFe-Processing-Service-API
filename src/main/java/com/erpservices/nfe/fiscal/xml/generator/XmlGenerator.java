@@ -1,12 +1,47 @@
 package com.erpservices.nfe.fiscal.xml.generator;
 
+import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
+
+import br.com.swconsultoria.nfe.Nfe;
+import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
+import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
+import br.com.swconsultoria.nfe.dom.enuns.DocumentoEnum;
+import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
+import br.com.swconsultoria.nfe.dom.enuns.StatusEnum;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.ObjectFactory;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Total;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Transp;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Prod;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto.COFINS;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto.PIS;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto.COFINS.COFINSAliq;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto.PIS.PISAliq;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Total.ICMSTot;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnderEmi;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TEndereco;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TLocal;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TRetEnviNFe;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TUf;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TUfEmi;
+import br.com.swconsultoria.nfe.util.ChaveUtil;
+import br.com.swconsultoria.nfe.util.ConstantesUtil;
+import br.com.swconsultoria.nfe.util.RetornoUtil;
+import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Gerador de XML da NF-e versão 4.00 conforme layout oficial.
@@ -72,318 +107,324 @@ public class XmlGenerator {
      * Gera o XML completo da NF-e a partir de uma Invoice.
      * 
      * @param invoice a invoice contendo os dados da nota fiscal
-     * @return String contendo o XML da NF-e (sem assinatura digital)
+     * @return TNFe objeto da nota fiscal eletrônica
      */
-    public String generate(Invoice invoice) {
-        StringBuilder xml = new StringBuilder();
-        
-        // Declaração XML
-        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        
-        // Tag raiz <NFe>
-        xml.append("<NFe xmlns=\"").append(NAMESPACE).append("\">");
-        
-        // Tag <infNFe> (informações da nota)
-        xml.append("<infNFe Id=\"NFe").append(generateChaveAcesso(invoice)).append("\" versao=\"4.00\">");
-        
-        // Seções principais
-        appendIde(xml, invoice);      // Identificação
-        appendEmit(xml);              // Emitente
-        appendDest(xml, invoice);     // Destinatário
-        appendDet(xml, invoice);      // Detalhamento (produtos)
-        appendTotal(xml, invoice);    // Totalizadores
-        appendPag(xml, invoice);      // Pagamento
-        appendTransp(xml);            // Transporte
-        appendInfAdic(xml);           // Informações adicionais
-        
-        xml.append("</infNFe>");
-        xml.append("</NFe>");
-        
-        return xml.toString();
-    }
-    
-    /**
-     * Gera chave de acesso (44 dígitos).
-     * TODO: Implementar cálculo real da chave conforme especificação.
-     */
-    private String generateChaveAcesso(Invoice invoice) {
-        // Por enquanto, chave fake para testes
-        // Formato: UF(2) + AAMM(4) + CNPJ(14) + MOD(2) + SERIE(3) + NNF(9) + TPEMIS(1) + CNFE(8) + DV(1)
-        return "41260100000000000001915500100000000010000000001";
-    }
-    
-    /**
-     * Seção <ide> - Identificação da NF-e.
-     * Campos obrigatórios conforme XSD.
-     */
-    private void appendIde(StringBuilder xml, Invoice invoice) {
-        xml.append("<ide>");
-        
-        // TODO: Adicionar campos obrigatórios do <ide>:
-        xml.append("<cUF>41</cUF>");                    // Código UF (41 = Paraná)
-        // TODO: Gerar número aleatório de 8 dígitos para segurança
-        xml.append("<cNF>00000001</cNF>");              // Código numérico (deve ser aleatório)
-        xml.append("<natOp>Venda de mercadoria</natOp>"); // Natureza da operação
-        xml.append("<mod>55</mod>");                    // Modelo (55 = NF-e)
-        xml.append("<serie>1</serie>");                 // Série
-        xml.append("<nNF>").append(invoice.invoiceNumber).append("</nNF>"); // Número da nota
-        xml.append("<dhEmi>").append(formatDateTime(invoice.issueDate)).append("</dhEmi>"); // Data/hora emissão
-        xml.append("<tpNF>1</tpNF>");                   // Tipo (1 = Saída)
-        xml.append("<idDest>1</idDest>");               // Destino (1 = Operação interna)
-        xml.append("<cMunFG>4106902</cMunFG>");         // Município fiscal geradora (Curitiba)
-        xml.append("<tpImp>1</tpImp>");                 // Formato impressão (1 = DANFE retrato)
-        xml.append("<tpEmis>1</tpEmis>");               // Tipo emissão (1 = Normal)
-        // cDV é calculado automaticamente como parte da chave de acesso
-        xml.append("<tpAmb>2</tpAmb>");                 // Ambiente (2 = Homologação)
-        xml.append("<finNFe>1</finNFe>");               // Finalidade (1 = Normal)
-        xml.append("<indFinal>1</indFinal>");           // Consumidor final (1 = Sim)
-        xml.append("<indPres>1</indPres>");             // Indicador presença (1 = Operação presencial)
-        xml.append("<procEmi>0</procEmi>");             // Processo emissão (0 = Próprio)
-        xml.append("<verProc>1.0.0</verProc>");         // Versão do processo de emissão
+    public TNFe generate(Invoice invoice, ConfiguracoesNfe config) throws Exception {
+        //Informe o Numero da NFe
+        int numeroNfe = 92756;
+        //Informe o CNPJ do Emitente da NFe
+        String cnpj = "10732644000128";
+        //Informe a data de Emissao da NFe
+        LocalDateTime dataEmissao = LocalDateTime.now();
+        //Informe o cnf da NFCe com 8 digitos
+        String cnf = String.format("%08d", new Random().nextInt(99999999));
+        //Informe o modelo da NFe
+        String modelo = DocumentoEnum.NFE.getModelo();
+        //Informe a Serie da NFe
+        int serie = 1;
+        //Informe o tipo de Emissao da NFe
+        String tipoEmissao = "1";
 
-        xml.append("</ide>");
+        // MontaChave a NFe
+        ChaveUtil chaveUtil = new ChaveUtil(config.getEstado(), cnpj, modelo, serie, numeroNfe, tipoEmissao, cnf, dataEmissao);
+        String chave = chaveUtil.getChaveNF();
+        String cdv = chaveUtil.getDigitoVerificador();
+
+        InfNFe infNFe = new InfNFe();
+        infNFe.setId(chave);
+        infNFe.setVersao(ConstantesUtil.VERSAO.NFE);
+
+        //Preenche IDE
+        infNFe.setIde(preencheIde(config, cnf, numeroNfe, tipoEmissao, modelo, serie, cdv, dataEmissao));
+
+        //Preenche Emitente
+        infNFe.setEmit(preencheEmitente(config, cnpj));
+
+        //Preenche o Destinatario
+        infNFe.setDest(preencheDestinatario());
+        infNFe.setEntrega(dadosEntrega(infNFe));
+
+        //Preenche os dados do Produto da Nfe e adiciona a Lista
+        infNFe.getDet().addAll(preencheDet());
+
+        //Preenche totais da NFe
+        infNFe.setTotal(preencheTotal());
+
+        //Preenche os dados de Transporte
+        infNFe.setTransp(preencheTransporte());
+
+        // Preenche dados Pagamento
+        infNFe.setPag(preenchePag());
+
+        infNFe.setInfAdic(montaInfAdic());
+
+        //Preenche as Informações de Intermediador
+        infNFe.setInfIntermed(montaInfInterm());
+
+        TNFe nfe = new TNFe();
+        nfe.setInfNFe(infNFe);
+
+        // Imprime XML gerado (apenas para debug)
+        System.out.println(XmlNfeUtil.objectToXml(nfe));
+
+        return nfe;
     }
     
-    /**
-     * Seção <emit> - Dados do Emitente.
-     */
-    private void appendEmit(StringBuilder xml) {
-        xml.append("<emit>");
-        
-        // TODO: Adicionar campos obrigatórios do <emit>:
-        xml.append("<CNPJ>").append(emitenteCnpj).append("</CNPJ>");
-        xml.append("<xNome>").append(emitenteRazaoSocial).append("</xNome>");
-        xml.append("<xFant>").append(emitenteRazaoSocial).append("</xFant>");
-        
-        // Endereço do emitente
-        xml.append("<enderEmit>");
-        xml.append("<xLgr>Rua Exemplo</xLgr>");         // TODO: Configurar endereço real
-        xml.append("<nro>123</nro>");
-        xml.append("<xBairro>Centro</xBairro>");
-        xml.append("<cMun>4106902</cMun>");             // Código município (Curitiba)
-        xml.append("<xMun>Curitiba</xMun>");
-        xml.append("<UF>PR</UF>");
-        xml.append("<CEP>80000000</CEP>");
-        xml.append("</enderEmit>");
-        
-        xml.append("<IE>").append(emitenteIE).append("</IE>"); // Inscrição Estadual
-        xml.append("<CRT>3</CRT>");                     // Regime tributário (3 = Regime Normal)
-        
-        xml.append("</emit>");
+
+    private static InfNFe.InfIntermed montaInfInterm() {
+        InfNFe.InfIntermed infIntermed = new InfNFe.InfIntermed();
+        infIntermed.setCNPJ("46971895000102");
+        infIntermed.setIdCadIntTran("JOao Intermediarios SA");
+        return infIntermed;
+    }
+
+    private static InfNFe.InfAdic montaInfAdic() {
+        InfNFe.InfAdic infAdic = new InfNFe.InfAdic();
+        infAdic.setInfCpl("Observacao teste");
+
+        return infAdic;
     }
     
-    /**
-     * Seção <dest> - Dados do Destinatário.
-     */
-    private void appendDest(StringBuilder xml, Invoice invoice) {
-        xml.append("<dest>");
-        
-        // TODO: Adicionar campos obrigatórios do <dest>:
-        xml.append("<CPF>").append(invoice.customerCpf).append("</CPF>");
-        xml.append("<xNome>").append(escapeXml(invoice.customerName)).append("</xNome>");
-        
-        // Endereço do destinatário
-        xml.append("<enderDest>");
-        xml.append("<xLgr>Rua do Cliente</xLgr>");      // TODO: Pegar do banco
-        xml.append("<nro>456</nro>");
-        xml.append("<xBairro>Jardim</xBairro>");
-        xml.append("<cMun>4106902</cMun>");
-        xml.append("<xMun>Curitiba</xMun>");
-        xml.append("<UF>PR</UF>");
-        xml.append("<CEP>81000000</CEP>");
-        xml.append("</enderDest>");
-        
-        xml.append("<indIEDest>9</indIEDest>");         // 9 = Não contribuinte
-        xml.append("<email>").append(invoice.customerEmail).append("</email>");
-        
-        xml.append("</dest>");
+    private static InfNFe.Ide preencheIde(ConfiguracoesNfe config, String cnf, int numeroNfe, String tipoEmissao, String modelo, int serie, String cDv, LocalDateTime dataEmissao) {
+        InfNFe.Ide ide = new InfNFe.Ide();
+        ide.setCUF(config.getEstado().getCodigoUF());
+        ide.setCNF(cnf);
+        ide.setNatOp("NOTA FISCAL CONSUMIDOR ELETRONICA");
+        ide.setMod(modelo);
+        ide.setSerie(String.valueOf(serie));
+
+        ide.setNNF(String.valueOf(numeroNfe));
+        ide.setDhEmi(XmlNfeUtil.dataNfe(dataEmissao, null));
+        ide.setTpNF("1");
+        ide.setIdDest("1");
+        ide.setCMunFG("5219753");
+        ide.setTpImp("1");
+        ide.setTpEmis(tipoEmissao);
+        ide.setCDV(cDv);
+        ide.setTpAmb(config.getAmbiente().getCodigo());
+        ide.setFinNFe("1");
+        ide.setIndFinal("1");
+        ide.setIndPres("2");
+        ide.setProcEmi("0");
+        ide.setVerProc("1.0");
+        ide.setIndIntermed("1");
+
+        return ide;
     }
+
     
-    /**
-     * Seção <det> - Detalhamento de Produtos/Serviços.
-     */
-    private void appendDet(StringBuilder xml, Invoice invoice) {
-        int itemNumber = 1;
-        
-        for (InvoiceItem item : invoice.items) {
-            xml.append("<det nItem=\"").append(itemNumber++).append("\">");
-            
-            // Produto
-            xml.append("<prod>");
-            xml.append("<cProd>").append(item.productCode).append("</cProd>");
-            xml.append("<cEAN>SEM GTIN</cEAN>");        // Código de barras (ou "SEM GTIN")
-            xml.append("<xProd>Produto Teste</xProd>"); // TODO: Adicionar descrição no InvoiceItem
-            xml.append("<NCM>12345678</NCM>");          // TODO: Adicionar NCM no InvoiceItem
-            xml.append("<CFOP>5102</CFOP>");            // TODO: Adicionar CFOP no InvoiceItem
-            xml.append("<uCom>UN</uCom>");              // Unidade comercial
-            xml.append("<qCom>").append(item.quantity).append(".0000</qCom>");
-            xml.append("<vUnCom>").append(formatDecimal(item.unitPrice)).append("</vUnCom>");
-            xml.append("<vProd>").append(formatDecimal(item.totalPrice)).append("</vProd>");
-            xml.append("<cEANTrib>SEM GTIN</cEANTrib>");
-            xml.append("<uTrib>UN</uTrib>");
-            xml.append("<qTrib>").append(item.quantity).append(".0000</qTrib>");
-            xml.append("<vUnTrib>").append(formatDecimal(item.unitPrice)).append("</vUnTrib>");
-            xml.append("<vOutro>0.00</vOutro>");        // Outras despesas acessórias
-            xml.append("<vDesc>0.00</vDesc>");          // Valor do desconto
-            xml.append("<indTot>1</indTot>");           // Compõe valor total (1 = Sim)
-            xml.append("</prod>");
-            
-            // Impostos (simplificado)
-            appendImpostos(xml, item);
-            
-            xml.append("</det>");
-        }
+        private static InfNFe.Emit preencheEmitente(ConfiguracoesNfe config, String cnpj) {
+        InfNFe.Emit emit = new InfNFe.Emit();
+        emit.setCNPJ(cnpj);
+        emit.setXNome("POSTO PARK XIII LTDA");
+
+        TEnderEmi enderEmit = new TEnderEmi();
+        enderEmit.setXLgr("AV SANTO ANTONIO cia");
+        enderEmit.setNro("0");
+        enderEmit.setXCpl("QD 17 LT 01-02-03");
+        enderEmit.setXBairro("PQ STO ANTONIO");
+        enderEmit.setCMun("5219753");
+        enderEmit.setXMun("SANTO ANTONIO DO DESCOBERTO");
+        enderEmit.setUF(TUfEmi.valueOf(config.getEstado().toString()));
+        enderEmit.setCEP("72900000");
+        enderEmit.setCPais("1058");
+        enderEmit.setXPais("Brasil");
+        enderEmit.setFone("6233215175");
+        emit.setEnderEmit(enderEmit);
+
+        emit.setIE("104519304");
+        emit.setCRT("3");
+
+        return emit;
     }
-    
+
     /**
-     * Impostos do produto (ICMS, PIS, COFINS).
-     * Implementação simplificada.
+     * Preenche o Destinatario da NFe
+     * @return
      */
-    private void appendImpostos(StringBuilder xml, InvoiceItem item) {
-        xml.append("<imposto>");
-        
-        // ICMS
-        xml.append("<ICMS>");
-        xml.append("<ICMS").append(icmsCst).append(">");  // Tag dinâmica baseada no CST
-        xml.append("<orig>").append(icmsOrigem).append("</orig>");
-        xml.append("<CST>").append(icmsCst).append("</CST>");
-        xml.append("<modBC>3</modBC>");                 // Modalidade BC
-        xml.append("<vBC>").append(formatDecimal(item.totalPrice)).append("</vBC>");
-        xml.append("<pICMS>").append(icmsAliquota).append("</pICMS>");
-        BigDecimal aliqICMS = new BigDecimal(icmsAliquota).divide(new BigDecimal("100"));
-        BigDecimal vICMS = item.totalPrice.multiply(aliqICMS);
-        xml.append("<vICMS>").append(formatDecimal(vICMS)).append("</vICMS>");
-        xml.append("</ICMS").append(icmsCst).append(">");
-        xml.append("</ICMS>");
-        
-        // IPI (OBRIGATÓRIO)
-        xml.append("<IPI>");
-        xml.append("<cEnq>").append(ipiCenq).append("</cEnq>");
-        xml.append("<IPINT>");                         // IPI não tributado
-        xml.append("<CST>").append(ipiCst).append("</CST>");
-        xml.append("</IPINT>");
-        xml.append("</IPI>");
-        
-        // PIS
-        xml.append("<PIS>");
-        xml.append("<PISAliq>");
-        xml.append("<CST>").append(pisCst).append("</CST>");
-        xml.append("<vBC>").append(formatDecimal(item.totalPrice)).append("</vBC>");
-        xml.append("<pPIS>").append(pisAliquota).append("</pPIS>");
-        BigDecimal aliqPIS = new BigDecimal(pisAliquota).divide(new BigDecimal("100"));
-        BigDecimal vPIS = item.totalPrice.multiply(aliqPIS);
-        xml.append("<vPIS>").append(formatDecimal(vPIS)).append("</vPIS>");
-        xml.append("</PISAliq>");
-        xml.append("</PIS>");
-        
-        // COFINS
-        xml.append("<COFINS>");
-        xml.append("<COFINSAliq>");
-        xml.append("<CST>").append(cofinsCst).append("</CST>");
-        xml.append("<vBC>").append(formatDecimal(item.totalPrice)).append("</vBC>");
-        xml.append("<pCOFINS>").append(cofinsAliquota).append("</pCOFINS>");
-        BigDecimal aliqCOFINS = new BigDecimal(cofinsAliquota).divide(new BigDecimal("100"));
-        BigDecimal vCOFINS = item.totalPrice.multiply(aliqCOFINS);
-        xml.append("<vCOFINS>").append(formatDecimal(vCOFINS)).append("</vCOFINS>");
-        xml.append("</COFINSAliq>");
-        xml.append("</COFINS>");
-        
-        xml.append("</imposto>");
+    private static InfNFe.Dest preencheDestinatario() {
+        InfNFe.Dest dest = new InfNFe.Dest();
+        dest.setCNPJ("47966252000133");
+        dest.setXNome("NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL");
+
+        TEndereco enderDest = new TEndereco();
+        enderDest.setXLgr("Rua: Teste");
+        enderDest.setNro("0");
+        enderDest.setXBairro("TESTE");
+        enderDest.setCMun("5202809");
+        enderDest.setXMun("AVELINOPOLIS");
+        enderDest.setUF(TUf.valueOf("GO"));
+        enderDest.setCEP("74430130");
+        enderDest.setCPais("1058");
+        enderDest.setXPais("Brasil");
+        enderDest.setFone("4845454545");
+        dest.setEnderDest(enderDest);
+        dest.setEmail("teste@test");
+        dest.setIE("109684036");
+        dest.setIndIEDest("1");
+        return dest;
     }
-    
+
     /**
-     * Seção <total> - Totalizadores da NF-e.
+     * Preenche Det Nfe
      */
-    private void appendTotal(StringBuilder xml, Invoice invoice) {
-        xml.append("<total>");
-        xml.append("<ICMSTot>");
-        
-        // Calcular valores reais dos impostos usando alíquotas configuradas
-        BigDecimal aliqICMS = new BigDecimal(icmsAliquota).divide(new BigDecimal("100"));
-        BigDecimal aliqPIS = new BigDecimal(pisAliquota).divide(new BigDecimal("100"));
-        BigDecimal aliqCOFINS = new BigDecimal(cofinsAliquota).divide(new BigDecimal("100"));
-        
-        BigDecimal vICMS = invoice.totalAmount.multiply(aliqICMS);
-        BigDecimal vPIS = invoice.totalAmount.multiply(aliqPIS);
-        BigDecimal vCOFINS = invoice.totalAmount.multiply(aliqCOFINS);
-        
-        xml.append("<vBC>").append(formatDecimal(invoice.totalAmount)).append("</vBC>");
-        xml.append("<vICMS>").append(formatDecimal(vICMS)).append("</vICMS>");
-        xml.append("<vICMSDeson>0.00</vICMSDeson>");
-        xml.append("<vFCP>0.00</vFCP>");
-        xml.append("<vBCST>0.00</vBCST>");
-        xml.append("<vST>0.00</vST>");
-        xml.append("<vFCPST>0.00</vFCPST>");
-        xml.append("<vProd>").append(formatDecimal(invoice.totalAmount)).append("</vProd>");
-        xml.append("<vFrete>0.00</vFrete>");
-        xml.append("<vSeg>0.00</vSeg>");
-        xml.append("<vDesc>0.00</vDesc>");
-        xml.append("<vII>0.00</vII>");
-        xml.append("<vIPI>0.00</vIPI>");
-        xml.append("<vIPIDevol>0.00</vIPIDevol>");
-        xml.append("<vPIS>").append(formatDecimal(vPIS)).append("</vPIS>");
-        xml.append("<vCOFINS>").append(formatDecimal(vCOFINS)).append("</vCOFINS>");
-        xml.append("<vOutro>0.00</vOutro>");
-        xml.append("<vNF>").append(formatDecimal(invoice.totalAmount)).append("</vNF>");
-        
-        xml.append("</ICMSTot>");
-        xml.append("</total>");
+    private static List<InfNFe.Det> preencheDet() {
+
+        //O Preenchimento deve ser feito por produto, Então deve ocorrer uma LIsta
+        InfNFe.Det det = new InfNFe.Det();
+        //O numero do Item deve seguir uma sequencia
+        det.setNItem("1");
+
+        // Preenche dados do Produto
+        det.setProd(preencheProduto());
+
+        //Preenche dados do Imposto
+        det.setImposto(preencheImposto());
+
+        det.setInfAdProd("Informações Adicionais do Produto");
+
+        //Retorna a Lista de Det
+        return Collections.singletonList(det);
     }
-    
+
     /**
-     * Seção <pag> - Formas de Pagamento.
+     * Preenche dados do Produto
+     * @return
      */
-    private void appendPag(StringBuilder xml, Invoice invoice) {
-        xml.append("<pag>");
-        xml.append("<detPag>");
-        xml.append("<tPag>01</tPag>");                  // Forma pagamento (01 = Dinheiro)
-        xml.append("<vPag>").append(formatDecimal(invoice.totalAmount)).append("</vPag>");
-        xml.append("</detPag>");
-        xml.append("</pag>");
+    private static Prod preencheProduto() {
+        Prod prod = new Prod();
+        prod.setCProd("7898480650104");
+        prod.setCEAN("7898480650104");
+        prod.setXProd("NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL");
+        prod.setNCM("27101932");
+        prod.setCEST("0600500");
+        prod.setIndEscala("S");
+        prod.setCFOP("5405");
+        prod.setUCom("UN");
+        prod.setQCom("1.0000");
+        prod.setVUnCom("13.0000");
+        prod.setVProd("13.00");
+        prod.setCEANTrib("7898480650104");
+        prod.setUTrib("UN");
+        prod.setQTrib("1.0000");
+        prod.setVUnTrib("13.0000");
+        prod.setIndTot("1");
+
+        return prod;
     }
-    
+
     /**
-     * Seção <transp> - Informações de Transporte.
+     * Preenche dados do Imposto da Nfe
+     * @return
      */
-    private void appendTransp(StringBuilder xml) {
-        xml.append("<transp>");
-        xml.append("<modFrete>9</modFrete>");          // 9 = Sem frete
-        xml.append("</transp>");
+    private static Imposto preencheImposto() {
+        Imposto imposto = new Imposto();
+
+        Imposto.ICMS icms = new Imposto.ICMS();
+
+        Imposto.ICMS.ICMS60 icms60 = new Imposto.ICMS.ICMS60();
+        icms60.setOrig("0");
+        icms60.setCST("60");
+        icms60.setVBCSTRet("0.00");
+        icms60.setPST("0.00");
+        icms60.setVICMSSTRet("0.00");
+        icms60.setVICMSSubstituto("0.00");
+
+        icms.setICMS60(icms60);
+
+        PIS pis = new PIS();
+        PISAliq pisAliq = new PISAliq();
+        pisAliq.setCST("01");
+        pisAliq.setVBC("13.00");
+        pisAliq.setPPIS("1.65");
+        pisAliq.setVPIS("0.21");
+        pis.setPISAliq(pisAliq);
+
+        COFINS cofins = new COFINS();
+        COFINSAliq cofinsAliq = new COFINSAliq();
+        cofinsAliq.setCST("01");
+        cofinsAliq.setVBC("13.00");
+        cofinsAliq.setPCOFINS("7.60");
+        cofinsAliq.setVCOFINS("0.99");
+        cofins.setCOFINSAliq(cofinsAliq);
+
+        imposto.getContent().add(new ObjectFactory().createTNFeInfNFeDetImpostoVTotTrib("5.00"));
+        imposto.getContent().add(new ObjectFactory().createTNFeInfNFeDetImpostoICMS(icms));
+        imposto.getContent().add(new ObjectFactory().createTNFeInfNFeDetImpostoPIS(pis));
+        imposto.getContent().add(new ObjectFactory().createTNFeInfNFeDetImpostoCOFINS(cofins));
+
+        return imposto;
     }
-    
+
     /**
-     * Seção <infAdic> - Informações Adicionais.
+     * Prenche Total NFe
+     * @return
      */
-    private void appendInfAdic(StringBuilder xml) {
-        xml.append("<infAdic>");
-        xml.append("<infCpl>Nota Fiscal emitida em ambiente de homologacao - Sem valor fiscal</infCpl>");
-        xml.append("</infAdic>");
+    private static Total preencheTotal() {
+        Total total = new Total();
+        ICMSTot icmstot = new ICMSTot();
+        icmstot.setVBC("0.00");
+        icmstot.setVICMS("0.00");
+        icmstot.setVICMSDeson("0.00");
+        icmstot.setVFCP("0.00");
+        icmstot.setVFCPST("0.00");
+        icmstot.setVFCPSTRet("0.00");
+        icmstot.setVBCST("0.00");
+        icmstot.setVST("0.00");
+        icmstot.setVProd("13.00");
+        icmstot.setVFrete("0.00");
+        icmstot.setVSeg("0.00");
+        icmstot.setVDesc("0.00");
+        icmstot.setVII("0.00");
+        icmstot.setVIPI("0.00");
+        icmstot.setVIPIDevol("0.00");
+        icmstot.setVPIS("0.21");
+        icmstot.setVCOFINS("0.99");
+        icmstot.setVOutro("0.00");
+        icmstot.setVNF("13.00");
+        icmstot.setVTotTrib("5.00");
+        total.setICMSTot(icmstot);
+
+        return total;
     }
-    
+
     /**
-     * Formata data/hora para padrão ISO 8601.
+     * Preenche Transporte
+     * @return
      */
-    private String formatDateTime(java.time.LocalDateTime dateTime) {
-        return dateTime.atZone(java.time.ZoneId.of("America/Sao_Paulo"))
-                       .format(DATE_TIME_FORMATTER);
+    private static Transp preencheTransporte() {
+        Transp transp = new Transp();
+        transp.setModFrete("9");
+        return transp;
     }
-    
+
     /**
-     * Formata BigDecimal para XML (2 casas decimais).
+     * Preenche dados Pagamento
+     * @return
      */
-    private String formatDecimal(BigDecimal value) {
-        return String.format("%.2f", value);
+    private static InfNFe.Pag preenchePag() {
+        InfNFe.Pag pag = new InfNFe.Pag();
+        InfNFe.Pag.DetPag detPag = new InfNFe.Pag.DetPag();
+        detPag.setTPag("01");
+        detPag.setVPag("13.00");
+        pag.getDetPag().add(detPag);
+
+        return pag;
     }
-    
-    /**
-     * Escapa caracteres especiais para XML.
-     */
-    private String escapeXml(String text) {
-        if (text == null) return "";
-        return text.replace("&", "&amp;")
-                   .replace("<", "&lt;")
-                   .replace(">", "&gt;")
-                   .replace("\"", "&quot;")
-                   .replace("'", "&apos;");
+
+    // Criado para evitar UFIdDest
+    private static TLocal dadosEntrega(InfNFe infNFe) {
+        TLocal entrega = new TLocal();
+
+        entrega.setCNPJ(infNFe.getDest().getCNPJ());
+
+        entrega.setXLgr(infNFe.getEmit().getEnderEmit().getXLgr());
+        entrega.setNro(infNFe.getEmit().getEnderEmit().getNro());
+        entrega.setXBairro(infNFe.getEmit().getEnderEmit().getXBairro());
+        entrega.setCMun(infNFe.getEmit().getEnderEmit().getCMun());
+        entrega.setXMun(infNFe.getEmit().getEnderEmit().getXMun());
+        entrega.setUF(TUf.valueOf(infNFe.getEmit().getEnderEmit().getUF().toString()));
+        return entrega;
     }
+
 }

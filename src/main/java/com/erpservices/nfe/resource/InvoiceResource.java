@@ -29,9 +29,8 @@ public class InvoiceResource {
     InvoiceService invoiceService;
     
     @POST
-    public Response createInvoice(InvoiceRequestDTO invoiceRequest) {
+    public Response createInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
         InvoiceResponseDTO response = invoiceService.processInvoice(invoiceRequest);
-        
         return Response.accepted(response).build();
     }
 

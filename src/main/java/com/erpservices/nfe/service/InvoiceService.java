@@ -12,11 +12,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.erpservices.nfe.dto.InvoiceItemRequestDTO;
 import com.erpservices.nfe.dto.InvoiceRequestDTO;
 import com.erpservices.nfe.dto.InvoiceResponseDTO;
+import com.erpservices.nfe.fiscal.config.NfeConfigurator;
+import com.erpservices.nfe.fiscal.envio.SendNfe;
 import com.erpservices.nfe.fiscal.xml.generator.XmlGenerator;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
+import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
+import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
+import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
+import br.com.swconsultoria.nfe.exception.NfeValidacaoException;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
+import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -30,10 +38,13 @@ public class InvoiceService {
     @Inject 
     XmlValidator xmlValidator;
 
+    @Inject
+    SendNfe sendNfe;
+
     private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
     @Transactional
-    public InvoiceResponseDTO processInvoice(InvoiceRequestDTO invoiceRequest) {
+    public InvoiceResponseDTO processInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
 
         // Gera dados de controle
         String trackingId = UUID.randomUUID().toString();
@@ -71,12 +82,19 @@ public class InvoiceService {
         // Persiste no banco
         invoice.persist();
 
-        // Gera Xml
-        String xml = xmlGenerator.generate(invoice);
+        // Criar Configuração da NFE
+        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, AmbienteEnum.HOMOLOGACAO);
+
+        // Gera Objeto Nfe 
+        TNFe nfe = xmlGenerator.generate(invoice, config);
+        String xml = XmlNfeUtil.objectToXml(nfe);
 
         // Valida Estrutura Xml com .xsd
         xmlValidator.validate(xml);
-        
+
+        // Envia NFE para Sefaz
+        sendNfe.send(nfe, config);
+
         // Monta resposta para o cliente
         InvoiceResponseDTO response = new InvoiceResponseDTO();
         response.trackingId = trackingId;
