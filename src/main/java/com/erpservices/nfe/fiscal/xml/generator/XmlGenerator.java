@@ -59,9 +59,6 @@ import java.util.Random;
 @ApplicationScoped
 public class XmlGenerator {
     
-    private static final String NAMESPACE = "http://www.portalfiscal.inf.br/nfe";
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-    
     // Dados do Emitente
     @ConfigProperty(name = "nfe.emitente.cnpj", defaultValue = "00000000000191")
     String emitenteCnpj;

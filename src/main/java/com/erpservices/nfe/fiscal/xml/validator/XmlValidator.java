@@ -3,8 +3,6 @@ package com.erpservices.nfe.fiscal.xml.validator;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.xml.sax.SAXException;
 
-import br.com.swconsultoria.nfe.exception.NfeValidacaoException;
-
 import javax.xml.XMLConstants;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;

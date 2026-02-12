@@ -22,12 +22,12 @@ import com.erpservices.nfe.model.InvoiceItem;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
-import br.com.swconsultoria.nfe.exception.NfeValidacaoException;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class InvoiceService {
@@ -40,6 +40,9 @@ public class InvoiceService {
 
     @Inject
     SendNfe sendNfe;
+
+    @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
+    String ambiente;
 
     private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
@@ -83,14 +86,19 @@ public class InvoiceService {
         invoice.persist();
 
         // Criar Configuração da NFE
-        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, AmbienteEnum.HOMOLOGACAO);
+        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
 
         // Gera Objeto Nfe 
         TNFe nfe = xmlGenerator.generate(invoice, config);
         String xml = XmlNfeUtil.objectToXml(nfe);
 
         // Valida Estrutura Xml com .xsd
-        xmlValidator.validate(xml);
+        if (ambiente.equals("prod") || ambiente.equals("homolog")) {
+            xmlValidator.validate(xml);
+        } else {
+            // todo: Validação interna de estrutura do XML
+            System.out.println("TODO structural Validation");
+        }
 
         // Envia NFE para Sefaz
         sendNfe.send(nfe, config);

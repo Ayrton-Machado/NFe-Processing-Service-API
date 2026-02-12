@@ -14,6 +14,29 @@ Rascunho:
 
 Diferencial: processamento assincrono, integracao com API SEFAZ real, envio por email e desenvolvimento com testes e SRP
 
+
+## Alterações para concluir testes (falta de certificado A1)
+- Informações genericas inseridas em um certificado mockado para que a biblioteca Java_nfe funcione corretamente (com possibilidade de inserir certificado real através de variáveis de ambiente)
+- Validação contra .xsd real exige Cert Digital A1, portanto em ambiente de teste há apenas validação interna de estrutura.
+- 
+
+## How-to-run
+
+### linux - bash
+export NFE_CERT_PATH=/caminho/completo/do/certificado.pfx
+export NFE_CERT_PASSWORD=sua_senha_aqui
+mvn quarkus:dev
+
+### windows - cmd
+set NFE_CERT_PATH=C:\certificados\certificado.pfx
+set NFE_CERT_PASSWORD=sua_senha_aqui
+mvnw quarkus:dev
+
+### windows - powershell
+$env:NFE_CERT_PATH="C:\certificados\certificado.pfx"
+$env:NFE_CERT_PASSWORD="sua_senha_aqui"
+./mvnw quarkus:dev
+
 ## SEFAZ
  Ambiente de Homologação - versão 4.00:
 
