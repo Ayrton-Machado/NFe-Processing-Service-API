@@ -14,7 +14,6 @@ import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
-import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
@@ -34,9 +33,10 @@ public class XmlGeneratorTest {
 
     @Test
     public void testGenerateXml() throws Exception {
-        // Criar invoice de teste
+        // Criar invoice de teste (hardcoded - padrão para testes unitários)
         Invoice invoice = new Invoice();
-        invoice.invoiceNumber = "000000001";
+        invoice.id = 1L; // ← Necessário para numeroNfe
+        invoice.number = "20260213-000001";
         invoice.issueDate = LocalDateTime.now();
         invoice.customerCpf = "12345678901";
         invoice.customerName = "Cliente Teste";
@@ -58,15 +58,16 @@ public class XmlGeneratorTest {
         TNFe nfe = xmlGenerator.generate(invoice, config);
         String xml = XmlNfeUtil.objectToXml(nfe);
         
-        // Valida Estrutura Xml com .xsd
-        if (ambiente.equals("prod") || ambiente.equals("homolog")) {
-            xmlValidator.validate(xml);
-        } else {
-            // todo: Validação interna de estrutura do XML
-            System.out.println("TODO structural Validation");
-        }
-        
+        // NOTA: Validação XSD completa exige assinatura digital (certificado A1)
+        xmlValidator.validate(xml);
+
+
         // Verificações básicas
-        assert xml.contains("<NFe");
+        assert xml != null : "XML não deve ser nulo";
+        assert xml.contains("<NFe") : "XML deve conter tag NFe";
+        assert xml.contains("<infNFe") : "XML deve conter tag infNFe";
+        assert xml.contains(invoice.customerCpf.replaceAll("[^0-9]", "")) : "XML deve conter CPF do cliente";
+        
+        System.out.println("XML gerado com sucesso!");
     }
 }

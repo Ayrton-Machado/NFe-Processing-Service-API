@@ -59,7 +59,7 @@ public class NfeConfigurator {
         cert.setNome("Certificado Mock - Desenvolvimento");
         cert.setVencimento(LocalDate.now().plusYears(1)); // Válido por 1 ano
         cert.setDiasRestantes(365L);
-        cert.setCnpjCpf("12345678000195"); // CNPJ fake
+        cert.setCnpjCpf("12345678000195"); // CNPJ mock
         cert.setValido(true); // Marca como válido
         cert.setNumeroSerie(BigInteger.valueOf(123456789L));
         cert.setModoMultithreading(false);

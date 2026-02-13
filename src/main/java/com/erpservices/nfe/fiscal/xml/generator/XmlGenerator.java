@@ -1,15 +1,8 @@
 package com.erpservices.nfe.fiscal.xml.generator;
 
-import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.model.Invoice;
-import com.erpservices.nfe.model.InvoiceItem;
-
-import br.com.swconsultoria.nfe.Nfe;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
-import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
 import br.com.swconsultoria.nfe.dom.enuns.DocumentoEnum;
-import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
-import br.com.swconsultoria.nfe.dom.enuns.StatusEnum;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.ObjectFactory;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Total;
@@ -23,22 +16,17 @@ import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Det.Imposto.PIS.PIS
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe.InfNFe.Total.ICMSTot;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnderEmi;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEndereco;
-import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TLocal;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
-import br.com.swconsultoria.nfe.schema_4.enviNFe.TRetEnviNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TUf;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TUfEmi;
 import br.com.swconsultoria.nfe.util.ChaveUtil;
 import br.com.swconsultoria.nfe.util.ConstantesUtil;
-import br.com.swconsultoria.nfe.util.RetornoUtil;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -108,11 +96,11 @@ public class XmlGenerator {
      */
     public TNFe generate(Invoice invoice, ConfiguracoesNfe config) throws Exception {
         //Informe o Numero da NFe
-        int numeroNfe = 92756;
+        int numeroNfe = invoice.id.intValue();
         //Informe o CNPJ do Emitente da NFe
-        String cnpj = "10732644000128";
+        String cnpj = emitenteCnpj;
         //Informe a data de Emissao da NFe
-        LocalDateTime dataEmissao = LocalDateTime.now();
+        LocalDateTime dataEmissao = invoice.issueDate;
         //Informe o cnf da NFCe com 8 digitos
         String cnf = String.format("%08d", new Random().nextInt(99999999));
         //Informe o modelo da NFe
@@ -160,6 +148,9 @@ public class XmlGenerator {
 
         TNFe nfe = new TNFe();
         nfe.setInfNFe(infNFe);
+        
+        // Adiciona informações suplementares (QR Code para NFC-e)
+        nfe.setInfNFeSupl(montaInfNFeSupl(chave));
 
         // Imprime XML gerado (apenas para debug)
         System.out.println(XmlNfeUtil.objectToXml(nfe));
@@ -180,6 +171,36 @@ public class XmlGenerator {
         infAdic.setInfCpl("Observacao teste");
 
         return infAdic;
+    }
+    
+    /**
+     * Monta as informações suplementares da NF-e (infNFeSupl).
+     * Gera QR Code em formato válido conforme padrão V2 ONLINE.
+     * 
+     * Formato QR Code V2 ONLINE:
+     * https://URL?p=CHAVE|2|AMBIENTE|VALOR|HASH
+     * 
+     * @param chaveNfe a chave de acesso da NF-e (pode vir com prefixo "NFe")
+     * @return objeto TNFe.InfNFeSupl preenchido
+     */
+    private static TNFe.InfNFeSupl montaInfNFeSupl(String chaveNfe) {
+        TNFe.InfNFeSupl infNFeSupl = new TNFe.InfNFeSupl();
+        
+        // Remove o prefixo "NFe" se existir (QR Code exige apenas os 44 dígitos)
+        String chave44Digitos = chaveNfe.startsWith("NFe") ? chaveNfe.substring(3) : chaveNfe;
+        
+        // QR Code V2 ONLINE - formato validado pelo XSD
+        // Padrão: ((HTTPS?|https?)://.*\?p=([0-9]{34}(1|3|4)[0-9]{9})\|[2]\|[1-2]\|(0|[1-9]{1}([0-9]{1,5})?)\|[A-Fa-f0-9]{40})
+        String qrCode = String.format(
+            "https://www.fazenda.sp.gov.br/nfce/qrcode?p=%s|2|1|0|%s",
+            chave44Digitos,
+            "0000000000000000000000000000000000000000" // Hash placeholder (40 caracteres hex)
+        );
+        
+        infNFeSupl.setQrCode(qrCode);
+        infNFeSupl.setUrlChave("https://www.fazenda.sp.gov.br/nfce/consulta");
+        
+        return infNFeSupl;
     }
     
     private static InfNFe.Ide preencheIde(ConfiguracoesNfe config, String cnf, int numeroNfe, String tipoEmissao, String modelo, int serie, String cDv, LocalDateTime dataEmissao) {
@@ -241,7 +262,7 @@ public class XmlGenerator {
      */
     private static InfNFe.Dest preencheDestinatario() {
         InfNFe.Dest dest = new InfNFe.Dest();
-        dest.setCNPJ("47966252000133");
+        dest.setCPF("12345678901");
         dest.setXNome("NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL");
 
         TEndereco enderDest = new TEndereco();
@@ -413,7 +434,7 @@ public class XmlGenerator {
     private static TLocal dadosEntrega(InfNFe infNFe) {
         TLocal entrega = new TLocal();
 
-        entrega.setCNPJ(infNFe.getDest().getCNPJ());
+        entrega.setCPF(infNFe.getDest().getCPF());
 
         entrega.setXLgr(infNFe.getEmit().getEnderEmit().getXLgr());
         entrega.setNro(infNFe.getEmit().getEnderEmit().getNro());

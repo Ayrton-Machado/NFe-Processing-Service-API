@@ -3,25 +3,42 @@
 Sistema para processamento de dados para emissão de NF-e com TDD, SRP e regra de negócio aplicada
 
 Rascunho:
-✅ Criar Geração de XML
-✅ Mockar SEFAZ com integracao Prod-Ready Assíncrona (email de pedido recebido)
-✅ Gerar Danfe
-✅ Enviar DANFE por email (Nfe Emitida)
-✅ Dockeirização
-✅ Migrar para PostgreSQL
-✅ Testes Durante a implementação
-✅ Criação de Front-end Angular com "Compra" simples que consuma a API.
+[X] Criar Geração de XML e Objeto NFE
+    [X] Criar, validação da estrutura do XML em ambiente de teste (homolog ou prod exige certificado A1)
+        [X] Incluir schemas .xsd reais da NFE
+    [ ] Adicionar dados reais por enpoint
+        [ ] Green-phase Estrutural
+[ ] Mockar validação e envio SEFAZ com integracao Prod-Ready
+    [X] Separar responsabilidades por ambiente (prod, homolog, test)
+        [ ] Validacao e simulação de envio de forma fiel no ambiente de test (SEFAZ Mockado) com assincronicidade
 
-Diferencial: processamento assincrono, integracao com API SEFAZ real, envio por email e desenvolvimento com testes e SRP
+[ ] Criar Geração do DANFE
+[ ] Configurar Envio e recebimento (DANFE) por email
+    [ ] Enviar email confirmando pedido
+    [ ] Enviar email com DANFE pronto
 
+Futuro:
+[ ] Enriquecer e criar mais testes e validações
+[ ] Criação de Front-end Angular com "Compra" simples que consuma a API - Com fluxo principal 100%.
+[ ] Dockeirização
+[ ] Migrar para PostgreSQL
+[ ] Testes Durante a implementação
 
-## Alterações para concluir testes (falta de certificado A1)
+## Observações (falta de certificado A1)
 - Informações genericas inseridas em um certificado mockado para que a biblioteca Java_nfe funcione corretamente (com possibilidade de inserir certificado real através de variáveis de ambiente)
 - Validação contra .xsd real exige Cert Digital A1, portanto em ambiente de teste há apenas validação interna de estrutura.
-- 
+- Envio e validação real em ambiente de produção ou homologação SEFAZ - não testado
 
 ## How-to-run
 
+### em ambiente de teste (test)
+### linux - bash
+mvn quarkus:dev
+
+### windows - cmd
+mvnw quarkus:dev
+
+### para ambiente prod ou homolog:
 ### linux - bash
 export NFE_CERT_PATH=/caminho/completo/do/certificado.pfx
 export NFE_CERT_PASSWORD=sua_senha_aqui
@@ -208,9 +225,7 @@ InvoiceProcessor
 - `POST /invoices` - Criar invoice
 - `GET /invoices/{id}` - Buscar por ID
 - `GET /invoices/tracking/{trackingId}` - Buscar por tracking
-- `GET /invoices` - Listar com filtros
 - `PATCH /invoices/{id}/status` - Atualizar status
-- `GET /invoices/stats` - Estatísticas
 
 ## 📁 Estrutura do Projeto
 

@@ -1,6 +1,7 @@
 package com.erpservices.nfe.fiscal.xml.validator;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
@@ -14,6 +15,9 @@ import java.io.StringReader;
 @ApplicationScoped
 public class XmlValidator {
     
+    @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
+    String ambiente;
+    
     private static final String SCHEMA_PATH = "src/main/resources/schemas";
     
     public void validate(String xml) {
@@ -21,7 +25,7 @@ public class XmlValidator {
             // Cria a fábrica de schemas (padrão W3C = formato XSD comum)
             SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             
-            // Carrega o arquivo XSD
+            // Carrega o schema .xsd
             File schemaFile = new File(SCHEMA_PATH + "/nfe_v4.00.xsd");
             Schema schema = schemaFactory.newSchema(schemaFile);
             
@@ -34,7 +38,12 @@ public class XmlValidator {
             System.out.println("XML válido!");
             
         } catch (SAXException e) {
-            // Aqui cai quando o XML é inválido - mostra o erro cru
+            // Em ambiente test, ignora erro de Signature faltando
+            if ("test".equalsIgnoreCase(ambiente) && e.getMessage().contains("Signature")) {
+                System.out.println("XML válido para ambiente TESTE (erro de Signature ignorado)");
+                return;
+            }
+            
             throw new RuntimeException("XML inválido: " + e.getMessage(), e);
         } catch (Exception e) {
             throw new RuntimeException("Erro na validação: " + e.getMessage(), e);

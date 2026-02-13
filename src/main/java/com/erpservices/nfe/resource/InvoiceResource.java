@@ -30,7 +30,7 @@ public class InvoiceResource {
     
     @POST
     public Response createInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
-        InvoiceResponseDTO response = invoiceService.processInvoice(invoiceRequest);
+        InvoiceResponseDTO response = invoiceService.issueInvoice(invoiceRequest);
         return Response.accepted(response).build();
     }
 

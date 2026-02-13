@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
-
 import com.erpservices.nfe.dto.InvoiceItemRequestDTO;
 import com.erpservices.nfe.dto.InvoiceRequestDTO;
 import com.erpservices.nfe.dto.InvoiceResponseDTO;
@@ -20,7 +19,6 @@ import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
 
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
-import br.com.swconsultoria.nfe.dom.enuns.AmbienteEnum;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
@@ -35,7 +33,7 @@ public class InvoiceService {
     @Inject
     XmlGenerator xmlGenerator;
 
-    @Inject 
+    @Inject
     XmlValidator xmlValidator;
 
     @Inject
@@ -46,23 +44,76 @@ public class InvoiceService {
 
     private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
+    /**
+     * Emite uma nota fiscal eletrônica (NFe).
+     * Método principal que cria a invoice, gera o XML, valida e envia para a SEFAZ.
+     * 
+     * @param invoiceRequest DTO com os dados da requisição da nota fiscal
+     * @return InvoiceResponseDTO com dados de rastreamento e confirmação de emissão
+     */
     @Transactional
-    public InvoiceResponseDTO processInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
+    public InvoiceResponseDTO issueInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
+        // 1. Cria e persiste a Invoice
+        Invoice invoice = preencheInvoice(invoiceRequest);
+        
+        // 2. Processa (gera XML, valida e envia)
+        InvoiceResponseDTO response = processInvoice(invoice);
+        
+        return response;
+    }
 
-        // Gera dados de controle
+    private InvoiceResponseDTO processInvoice(Invoice invoice) throws Exception {
+        // Geração de dados de controle
         String trackingId = UUID.randomUUID().toString();
+
+        // Criar Configuração da NFE
+        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
+
+        // Gera Objeto Nfe
+        TNFe nfe = xmlGenerator.generate(invoice, config);
+        String xml = XmlNfeUtil.objectToXml(nfe);
+
+        // TODO: Deve enviar email após resposta do sistema
+        
+        // Debug: Salvar XML em arquivo para inspeção
+        System.out.println("=== XML GERADO ===");
+        System.out.println(xml);
+        System.out.println("==================");
+
+        // Valida Estrutura Xml com .xsd 
+        xmlValidator.validate(xml);
+        
+        if (ambiente.equals("prod") || ambiente.equals("homolog")) {
+            // Envia NFE para Sefaz através do webservice 
+            sendNfe.send(nfe, config); 
+        } else {
+            // TODO: Simula envio para o SEFAZ
+            sendNfe.sendNfeMocked(nfe, config);
+        }
+
+        // Monta resposta para o cliente
+        InvoiceResponseDTO response = new InvoiceResponseDTO();
+        response.trackingId = trackingId;
+        response.issueDate = invoice.issueDate;
+        response.message = "Invoice received for async processing";
+
+        return response;
+    }
+
+    private Invoice preencheInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
+        // Gera dados de controle
         String invoiceNumber = generateInvoiceNumber();
         LocalDateTime issueDate = LocalDateTime.now();
-        
+
         // Cria entidade Invoice
         Invoice invoice = new Invoice();
-        invoice.invoiceNumber = invoiceNumber;
+        invoice.number = invoiceNumber;
         invoice.issueDate = issueDate;
         invoice.status = "RECEIVED";
         invoice.customerCpf = invoiceRequest.customerCpf;
         invoice.customerName = invoiceRequest.customerName;
         invoice.customerEmail = invoiceRequest.customerEmail;
-        
+
         // Cria items
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<InvoiceItem> items = new ArrayList<>();
@@ -74,49 +125,26 @@ public class InvoiceService {
 
             BigDecimal itemTotal = item.unitPrice.multiply(BigDecimal.valueOf(item.quantity));
             item.totalPrice = itemTotal;
-            totalAmount =  totalAmount.add(itemTotal);
+            totalAmount = totalAmount.add(itemTotal);
 
             item.invoice = invoice;
             items.add(item);
         }
         invoice.items = items;
         invoice.totalAmount = totalAmount;
-        
+
         // Persiste no banco
         invoice.persist();
 
-        // Criar Configuração da NFE
-        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
-
-        // Gera Objeto Nfe 
-        TNFe nfe = xmlGenerator.generate(invoice, config);
-        String xml = XmlNfeUtil.objectToXml(nfe);
-
-        // Valida Estrutura Xml com .xsd
-        if (ambiente.equals("prod") || ambiente.equals("homolog")) {
-            xmlValidator.validate(xml);
-        } else {
-            // todo: Validação interna de estrutura do XML
-            System.out.println("TODO structural Validation");
-        }
-
-        // Envia NFE para Sefaz
-        sendNfe.send(nfe, config);
-
-        // Monta resposta para o cliente
-        InvoiceResponseDTO response = new InvoiceResponseDTO();
-        response.trackingId = trackingId;
-        response.issueDate = issueDate;
-        response.message = "Invoice received for async processing";
-        
-        return response;
+        // Retorna NFE crua
+        return invoice;
     }
-    
+
     private String generateInvoiceNumber() {
         LocalDateTime now = LocalDateTime.now();
         String datePart = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long sequence = invoiceCounter.getAndIncrement();
-        
+
         // Formato: YYYYMMDD-NNNNNN (ex: 20260205-000001)
         return String.format("%s-%06d", datePart, sequence);
     }

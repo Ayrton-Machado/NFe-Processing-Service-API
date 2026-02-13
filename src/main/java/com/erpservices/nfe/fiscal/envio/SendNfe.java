@@ -66,5 +66,9 @@ public class SendNfe {
             System.out.println("# Xml Final :" + XmlNfeUtil.criaNfeProc(enviNFe, retorno.getProtNFe()));
         }    
     }
+
+    public void sendNfeMocked(TNFe nfe, ConfiguracoesNfe configuracoesNfe) throws Exception {
+        System.out.println("TODO: Mocked NFE sender");
+    }
     
 }

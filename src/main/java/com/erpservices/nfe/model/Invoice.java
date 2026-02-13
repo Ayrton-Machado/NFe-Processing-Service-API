@@ -16,7 +16,7 @@ public class Invoice extends PanacheEntity {
     
     // ====== IDENTIFICAÇÃO ======
     @Column(name = "invoice_number", length = 50)
-    public String invoiceNumber;
+    public String number;
     
     @Column(name = "issue_date")
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss")
