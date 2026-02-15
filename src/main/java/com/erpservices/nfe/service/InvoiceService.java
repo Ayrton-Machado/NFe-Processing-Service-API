@@ -39,6 +39,12 @@ public class InvoiceService {
     @Inject
     SendNfe sendNfe;
 
+    @Inject
+    NfeConfigurator nfeConfigurator;
+
+    @Inject
+    DanfeService danfeService;
+
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
     String ambiente;
 
@@ -55,19 +61,26 @@ public class InvoiceService {
     public InvoiceResponseDTO issueInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
         // 1. Cria e persiste a Invoice
         Invoice invoice = preencheInvoice(invoiceRequest);
+
+        // Monta resposta para o cliente
+        String trackingId = UUID.randomUUID().toString();
+        InvoiceResponseDTO response = new InvoiceResponseDTO();
+        response.trackingId = trackingId;
+        response.issueDate = invoice.issueDate;
+        response.message = "Pedido Confirmado";
         
         // 2. Processa (gera XML, valida e envia)
-        InvoiceResponseDTO response = processInvoice(invoice);
-        
+        String xml = processInvoice(invoice);
+
+        // 3. Gera DANFE
+        danfeService.gerarDanfe(xml, "danfe" + trackingId);
+
         return response;
     }
 
-    private InvoiceResponseDTO processInvoice(Invoice invoice) throws Exception {
-        // Geração de dados de controle
-        String trackingId = UUID.randomUUID().toString();
-
+    private String processInvoice(Invoice invoice) throws Exception {
         // Criar Configuração da NFE
-        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
+        ConfiguracoesNfe config = nfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
 
         // Gera Objeto Nfe
         TNFe nfe = xmlGenerator.generate(invoice, config);
@@ -78,26 +91,19 @@ public class InvoiceService {
         // Debug: Salvar XML em arquivo para inspeção
         System.out.println("=== XML GERADO ===");
         System.out.println(xml);
-        System.out.println("==================");
+        System.out.println("================== \n");
 
         // Valida Estrutura Xml com .xsd 
         xmlValidator.validate(xml);
         
+        // Ambiente PROD realizará envio com valor fiscal real
         if (ambiente.equals("prod") || ambiente.equals("homolog")) {
-            // Envia NFE para Sefaz através do webservice 
-            sendNfe.send(nfe, config); 
-        } else {
-            // TODO: Simula envio para o SEFAZ
-            sendNfe.sendNfeMocked(nfe, config);
+            // Envia NFE para Sefaz através do webservice (Envio exige certificado A1) 
+            // NÃO-TESTADO
+            sendNfe.send(nfe, config);
         }
 
-        // Monta resposta para o cliente
-        InvoiceResponseDTO response = new InvoiceResponseDTO();
-        response.trackingId = trackingId;
-        response.issueDate = invoice.issueDate;
-        response.message = "Invoice received for async processing";
-
-        return response;
+        return xml;
     }
 
     private Invoice preencheInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {

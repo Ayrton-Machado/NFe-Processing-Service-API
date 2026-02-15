@@ -25,11 +25,11 @@ public class SendNfe {
         enviNFe.getNFe().add(nfe);
         
         // Monta e Assina o XML
-        enviNFe = Nfe.montaNfe(configuracoesNfe, enviNFe, true);
+        enviNFe = Nfe.montaNfe(configuracoesNfe, enviNFe, false);
 
         // Envia a Nfe para a Sefaz
         TRetEnviNFe retorno = Nfe.enviarNfe(configuracoesNfe, enviNFe, DocumentoEnum.NFE);
-
+        
         //Valida se o Retorno é Assincrono
         if (RetornoUtil.isRetornoAssincrono(retorno)) {
             //Pega o Recibo

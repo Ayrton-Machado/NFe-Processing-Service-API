@@ -35,18 +35,18 @@ public class XmlValidator {
             // Valida o XML - se tiver erro, lança exceção SAXException automaticamente
             validator.validate(new StreamSource(new StringReader(xml)));
             
-            System.out.println("XML válido!");
+            System.out.println("VALIDACAO: XML válido!");
             
         } catch (SAXException e) {
             // Em ambiente test, ignora erro de Signature faltando
             if ("test".equalsIgnoreCase(ambiente) && e.getMessage().contains("Signature")) {
-                System.out.println("XML válido para ambiente TESTE (erro de Signature ignorado)");
+                System.out.println("VALIDACAO: XML válido para ambiente TESTE (erro de Signature: " + e.getMessage() + " ignorado)");
                 return;
             }
             
-            throw new RuntimeException("XML inválido: " + e.getMessage(), e);
+            throw new RuntimeException("VALIDACAO: XML inválido: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Erro na validação: " + e.getMessage(), e);
+            throw new RuntimeException("VALIDACAO: Erro na validação: " + e.getMessage(), e);
         }
     }
 }

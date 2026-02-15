@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 import jakarta.inject.Inject;
 
 import com.erpservices.nfe.fiscal.config.NfeConfigurator;
+import com.erpservices.nfe.fiscal.envio.SendNfe;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
+import com.erpservices.nfe.service.DanfeService;
 
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
@@ -27,6 +29,15 @@ public class XmlGeneratorTest {
 
     @Inject
     XmlValidator xmlValidator;
+
+    @Inject
+    SendNfe sendNfe; 
+
+    @Inject
+    NfeConfigurator nfeConfigurator;
+
+    @Inject
+    DanfeService danfeService;
 
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
     String ambiente;
@@ -52,7 +63,7 @@ public class XmlGeneratorTest {
         invoice.items = List.of(item);
 
         // Criar Configuração da NFE
-        ConfiguracoesNfe config = NfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
+        ConfiguracoesNfe config = nfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
 
         // Gera Objeto Nfe 
         TNFe nfe = xmlGenerator.generate(invoice, config);
@@ -61,6 +72,14 @@ public class XmlGeneratorTest {
         // NOTA: Validação XSD completa exige assinatura digital (certificado A1)
         xmlValidator.validate(xml);
 
+        // Ambiente PROD realizará envio com valor fiscal real
+        if (ambiente.equals("prod") || ambiente.equals("homolog")) {
+            // Envia NFE para Sefaz através do webservice (Envio exige certificado A1) 
+            // NÃO-TESTADO
+            sendNfe.send(nfe, config);
+        }
+
+        danfeService.gerarDanfe(xml, "danfezinho");
 
         // Verificações básicas
         assert xml != null : "XML não deve ser nulo";
