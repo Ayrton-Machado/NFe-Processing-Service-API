@@ -57,7 +57,7 @@ export NFE_CERT_PASSWORD="senha_certificado"
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/NFe-Processing-Service-API
+git clone https://github.com/Ayrton-Machado/NFe-Processing-Service-API
 cd NFe-Processing-Service-API
 ```
 

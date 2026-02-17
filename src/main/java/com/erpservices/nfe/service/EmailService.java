@@ -39,7 +39,7 @@ public class EmailService {
             return true;
 
         } catch (Exception e) {
-            System.err.println("Erro ao enviar email (Exige chaves venv): " + e.getMessage());
+            System.err.println("Erro ao enviar email (Exige variáveis de ambiente SMTP_USERNAME e SMTP_PASSWORD): " + e.getMessage());
             e.printStackTrace();
 
             return false;

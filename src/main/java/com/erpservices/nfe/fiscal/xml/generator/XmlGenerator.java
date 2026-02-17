@@ -113,32 +113,32 @@ public class XmlGenerator {
         infNFe.setId(chave);
         infNFe.setVersao(ConstantesUtil.VERSAO.NFE);
 
-        //Preenche IDE
+        // Preenche IDE
         infNFe.setIde(preencheIde(config, cnf, numeroNfe, tipoEmissao, modelo, serie, cdv, dataEmissao));
 
-        //Preenche Emitente
+        // Preenche Emitente
         infNFe.setEmit(preencheEmitente(config, cnpj));
 
-        //Preenche o Destinatario
+        // Preenche o Destinatario
         infNFe.setDest(preencheDestinatario());
         infNFe.setEntrega(dadosEntrega(infNFe));
 
-        //Preenche os dados do Produto da Nfe e adiciona a Lista
+        // Preenche os dados do Produto da Nfe e adiciona a Lista
         infNFe.getDet().addAll(preencheDet());
 
-        //Preenche totais da NFe
+        // Preenche totais da NFe
         infNFe.setTotal(preencheTotal());
 
-        //Preenche os dados de Transporte
+        // Preenche os dados de Transporte
         infNFe.setTransp(preencheTransporte());
 
         // Preenche dados Pagamento
         infNFe.setPag(preenchePag());
 
-        // Preenche informacões adicionais
+        // Preenche informações adicionais
         infNFe.setInfAdic(montaInfAdic());
 
-        //Preenche as Informações de Intermediador
+        // Preenche as Informações de Intermediador
         infNFe.setInfIntermed(montaInfInterm());
 
         // Monta objeto da NFe

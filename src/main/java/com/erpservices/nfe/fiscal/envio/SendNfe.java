@@ -63,12 +63,7 @@ public class SendNfe {
             System.out.println();
             System.out.println("# Status: " + retorno.getProtNFe().getInfProt().getCStat() + " - " + retorno.getProtNFe().getInfProt().getXMotivo());
             System.out.println("# Protocolo: " + retorno.getProtNFe().getInfProt().getNProt());
-            System.out.println("# Xml Final :" + XmlNfeUtil.criaNfeProc(enviNFe, retorno.getProtNFe()));
+            System.out.println("# XML Final: " + XmlNfeUtil.criaNfeProc(enviNFe, retorno.getProtNFe()));
         }    
     }
-
-    public void sendNfeMocked(TNFe nfe, ConfiguracoesNfe configuracoesNfe) throws Exception {
-        System.out.println("TODO: Mocked NFE sender");
-    }
-    
 }

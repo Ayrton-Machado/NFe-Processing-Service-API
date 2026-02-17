@@ -4,12 +4,10 @@ import br.com.swconsultoria.nfe.impressao.ImpressaoDTO;
 import br.com.swconsultoria.nfe.impressao.ImpressaoNfeUtil;
 import br.com.swconsultoria.nfe.impressao.JasperNFeEnum;
 import jakarta.enterprise.context.ApplicationScoped;
-import static com.erpservices.nfe.fiscal.impressao.ConstantesImpressaoNfeMock.*;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import static com.erpservices.nfe.fiscal.impressao.ConstantesImpressaoNfeMock.*;
 import static br.com.swconsultoria.nfe.impressao.ConstantesImpressaoNfeUtil.*;
-
 
 @ApplicationScoped
 public class DanfeService {
