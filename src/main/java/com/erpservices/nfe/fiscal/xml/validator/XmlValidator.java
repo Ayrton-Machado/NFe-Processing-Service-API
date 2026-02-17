@@ -22,7 +22,7 @@ public class XmlValidator {
     
     public void validate(String xml) {
         try {
-            // Cria a fábrica de schemas (padrão W3C = formato XSD comum)
+            // Cria o modelo do schema em padrão W3C (formato XSD comum)
             SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             
             // Carrega o schema .xsd
@@ -35,18 +35,18 @@ public class XmlValidator {
             // Valida o XML - se tiver erro, lança exceção SAXException automaticamente
             validator.validate(new StreamSource(new StringReader(xml)));
             
-            System.out.println("VALIDACAO: XML válido!");
+            System.out.println("\nVALIDACAO: XML válido!");
             
         } catch (SAXException e) {
             // Em ambiente test, ignora erro de Signature faltando
             if ("test".equalsIgnoreCase(ambiente) && e.getMessage().contains("Signature")) {
-                System.out.println("VALIDACAO: XML válido para ambiente TESTE (erro de Signature: " + e.getMessage() + " ignorado)");
+                System.out.println("\nVALIDACAO: XML válido para ambiente TESTE (erro de Signature: " + e.getMessage() + " ignorado)");
                 return;
             }
             
-            throw new RuntimeException("VALIDACAO: XML inválido: " + e.getMessage(), e);
+            throw new RuntimeException("\nVALIDACAO: XML inválido: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("VALIDACAO: Erro na validação: " + e.getMessage(), e);
+            throw new RuntimeException("\nVALIDACAO: Erro na validação: " + e.getMessage(), e);
         }
     }
 }

@@ -1,378 +1,140 @@
-# NFe-Processing-Service-API
+# NFe Processing Service API
 
-Sistema para processamento de dados para emissão de NF-e com TDD, SRP e regra de negócio aplicada
+![Java](https://img.shields.io/badge/java_21-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
+![Quarkus](https://img.shields.io/badge/quarkus-%234794EB.svg?style=for-the-badge&logo=quarkus&logoColor=white)
+![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=Hibernate&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)
 
-Rascunho:
-[X] Criar Geração de XML e Objeto NFE
-    [X] Criar, validação da estrutura do XML em ambiente de teste (homolog ou prod exige certificado A1)
-        [X] Incluir schemas .xsd reais da NFE
-    [ ] Adicionar dados reais por enpoint
-        [ ] Green-phase Estrutural
-[ ] Mockar validação e envio SEFAZ com integracao Prod-Ready
-    [X] Separar responsabilidades por ambiente (prod, homolog, test)
-        [ ] Validacao e simulação de envio de forma fiel no ambiente de test (SEFAZ Mockado) com assincronicidade
+> **API REST para processamento de Notas Fiscais Eletrônicas (NFe)** com integração à biblioteca Java-NFe.
+> 
+> Arquitetura em camadas com separação de responsabilidades, configuração multi-ambiente e geração automática de DANFE com envio por e-mail.
 
-[ ] Criar Geração do DANFE
-[ ] Configurar Envio e recebimento (DANFE) por email
-    [ ] Enviar email confirmando pedido
-    [ ] Enviar email com DANFE pronto
+---
 
-Futuro:
-[ ] Enriquecer e criar mais testes e validações
-[ ] Criação de Front-end Angular com "Compra" simples que consuma a API - Com fluxo principal 100%.
-[ ] Dockeirização
-[ ] Migrar para PostgreSQL
-[ ] Testes Durante a implementação
+## 🔗 Principais Endpoints
 
-## Observações (falta de certificado A1)
-- Informações genericas inseridas em um certificado mockado para que a biblioteca Java_nfe funcione corretamente (com possibilidade de inserir certificado real através de variáveis de ambiente)
-- Validação contra .xsd real exige Cert Digital A1, portanto em ambiente de teste há apenas validação interna de estrutura.
-- Envio e validação real em ambiente de produção ou homologação SEFAZ - não testado
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/nfe/create` | Emitir NFe (gera XML, valida, cria DANFE e envia email) |
+| GET | `/nfe/list` | Listar todas as NFes |
+| GET | `/nfe/tracking/{trackingId}` | Buscar NFe por código de rastreamento |
 
-## How-to-run
+> 📖 **Swagger UI:** http://localhost:8080/q/swagger-ui
 
-### em ambiente de teste (test)
-### linux - bash
-mvn quarkus:dev
+---
 
-### windows - cmd
-mvnw quarkus:dev
+## 💻 Pré-requisitos
 
-### para ambiente prod ou homolog:
-### linux - bash
-export NFE_CERT_PATH=/caminho/completo/do/certificado.pfx
-export NFE_CERT_PASSWORD=sua_senha_aqui
-mvn quarkus:dev
+- [Java 21+](https://www.oracle.com/java/technologies/downloads/)
+- Maven 3.8+ (opcional - projeto inclui Maven Wrapper)
 
-### windows - cmd
-set NFE_CERT_PATH=C:\certificados\certificado.pfx
-set NFE_CERT_PASSWORD=sua_senha_aqui
-mvnw quarkus:dev
+---
 
-### windows - powershell
-$env:NFE_CERT_PATH="C:\certificados\certificado.pfx"
-$env:NFE_CERT_PASSWORD="sua_senha_aqui"
+## ⚙️ Configuração Avançada
+
+### 📧 Email (Opcional)
+
+Para enviar emails reais, configure:
+
+```bash
+export SMTP_USERNAME="seu-email@gmail.com"
+export SMTP_PASSWORD="sua-senha-de-app"
+```
+
+> 💡 Mock está ativo, emails aparecem confirmados apenas no console (sem envio real).
+
+### 🔐 Certificado Digital A1 (Produção/Homologação) (NÃO TESTADO)
+
+Para integração com SEFAZ:
+
+```bash
+export NFE_CERT_PATH="/caminho/certificado.pfx"
+export NFE_CERT_PASSWORD="senha_certificado"
+```
+
+## 🚀 Como Executar
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/seu-usuario/NFe-Processing-Service-API
+cd NFe-Processing-Service-API
+```
+
+### 2. Execute a aplicação
+
+**Linux / macOS:**
+```bash
+chmod +x mvnw  # Dar permissão de execução (executar apenas uma vez)
 ./mvnw quarkus:dev
-
-## SEFAZ
- Ambiente de Homologação - versão 4.00:
-
-- Autorização:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeAutorizacao4?wsdl
-
-- Consulta Recibo:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeRetAutorizacao4?wsdl
-
-- Consulta Chave Acesso:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeConsultaProtocolo4?wsdl
-
-- Inutilização:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeInutilizacao4?wsdl
-
-- Consulta Status do Serviço:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeStatusServico4?wsdl
-
-- Consulta a Cadastro:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/CadConsultaCadastro4?wsdl
-
-- Registro de Eventos:
-https://homologacao.nfe.sefa.pr.gov.br/nfe/NFeRecepcaoEvento4?wsdl
-
-##  Autenticação
-
-**Autenticação Técnica (API):**
-- E-commerce se autentica via API Key ou Bearer Token
-- Garante que apenas sistemas autorizados solicitem emissões
-
-**Identificação Fiscal (Payload):**
-- CPF/CNPJ do destinatário: dado fiscal enviado no `POST /invoices`
-
-**Autenticação Fiscal (SEFAZ):**
-- Feita via certificado digital da empresa emitente
-- SEFAZ valida CNPJ, certificado e dados da nota
-- Consumidor final não se autentica no sistema
-
-## 🏢 Arquitetura Simples Banco
-
-**Modelo:** Cada empresa com suas invoices ligadas por fk
-
-```
-┌──────────────────────────┐
-│  invoices (compartilhada)│  ← Uma tabela para todas as empresas
-│  - id, supplier_id       │     Isolamento por supplier_id
-│  - customer_cpf_cnpj     │
-│  - total_amount, status  │
-└──────────────────────────┘
-           ↑
-           │ (FK: invoice_id)
-           │
-┌──────────────────────────┐
-│  invoice_items           │
-│  - id, invoice_id        │
-│  - description, qty      │
-└──────────────────────────┘
 ```
 
-**Como funciona:**
-- Uma única tabela `invoices` para todas as empresas
-- Isolamento feito via coluna `supplier_id` (FK para `suppliers`)
-
-## Status da Invoice
-
-- `RECEIVED` - Recebida
-- `PROCESSING` - Em processamento
-- `COMPLETED` - Concluída
-- `ERROR` - Erro no processamento
-
-## 🔄 Fluxo Simples
-
-```
-E-commerce (autenticado) → POST /invoices (supplier_id + dados venda + destinatário)
-    ↓
-Validações (supplier ativo, CPF/CNPJ, valores, itens, UF/CEP, duplicação...)
-    ↓
-Enriquecimento (gera série, número, trackingId, timestamps)
-    ↓
-Persistência (suppliers → invoices → invoice_items com status RECEIVED)
-    ↓
-Kafka Event (processamento assíncrono)
-    ↓
-Retorna 202 Accepted (id + trackingId)
+**Windows (CMD):**
+```cmd
+mvnw.cmd quarkus:dev
 ```
 
-## 🔄Fluxo Técnico (Camadas)
-
-```
-InvoiceResource → InvoiceRequestDTO
-   ↓
-InvoiceService
-   ├── Valida Supplier (SupplierService)
-   ├── Valida Dados (InvoiceValidator + CnpjValidator)
-   ├── Enriquece (série, número, trackingId)
-   ├── Persiste (InvoiceRepository) → status: RECEIVED
-   └── Publica Evento (Kafka)
-   ↓
-InvoiceResponseDTO → HTTP 202 Accepted
-
-[Assíncrono - Kafka Consumer]
-InvoiceProcessor
-   ├── Status → PROCESSING
-   ├── Aplica regras de negócio
-   └── Status → COMPLETED/ERROR
+**Windows (PowerShell):**
+```powershell
+.\mvnw.cmd quarkus:dev
 ```
 
-## 🔄 Fluxo Principal Completo
+✅ **Aplicação disponível em:** http://localhost:8080  
+📖 **Swagger UI:** http://localhost:8080/q/swagger-ui
 
-```
-1. E-commerce autentica (API Key/Bearer Token)
-    ↓
-2. POST /invoices (supplier_id, customer, items, total)
-    ↓
-3. Validações (15 regras - ver seção Validações)
-    ↓
-4. Enriquecimento (série, número, trackingId)
-    ↓
-5. Persiste: Invoice + InvoiceItems (status: RECEIVED)
-    ↓
-6. Publica Kafka Event
-    ↓
-7. Retorna 202 Accepted (id, trackingId, status)
+> 💡 **Quarkus Dev Mode** inclui hot reload - suas alterações são aplicadas automaticamente!
 
-[PROCESSAMENTO ASSÍNCRONO]
-    ↓
-8. Kafka Consumer → InvoiceProcessor
-    ↓
-9. Status: RECEIVED → PROCESSING → COMPLETED/ERROR
-    ↓
-10. Notifica cliente (email com NFe)
+---
+
+## 🧪 Executar Testes
+
+**Linux / macOS:**
+```bash
+chmod +x mvnw  # Dar permissão (se ainda não fez)
+./mvnw test
 ```
 
-**Consulta:**
-- `GET /invoices/tracking/{trackingId}` → status da invoice
-
-## 🔍 Validações Principais (v0.1)
-
-### 📋 Validações Básicas de Dados
-- [ ] CPF/CNPJ do destinatário deve ser válido (dígitos verificadores, rejeitar zerados/sequenciais)
-- [ ] CNPJ do emitente deve estar cadastrado e ativo na tabela Suppliers
-- [ ] Dados obrigatórios do destinatário: nome completo, endereço completo (CEP, rua, número, cidade, UF), email
-
-### 💰 Validações de Valores
-- [ ] Valores não podem ser negativos ou zero (quantidade, valor unitário, total)
-- [ ] Total da nota deve bater com soma dos itens: Soma(item.qty × item.unitPrice) = invoice.totalAmount
-- [ ] Rejeitar notas acima de valor máximo configurável
-
-### 🛒 Validações de Itens
-- [ ] Nota deve ter pelo menos 1 item
-- [ ] Limite máximo de itens por nota (configurável)
-- [ ] Descrição do produto obrigatória (mínimo 3 caracteres, máximo 120 caracteres)
-
-### 📍 Validações Geográficas
-- [ ] UF do destinatário deve ser válida (UFs brasileiras)
-- [ ] CEP do destinatário deve ter formato válido (00000-000 ou 00000000)
-
-### ⏰ Validações Temporais
-- [ ] Data de emissão não pode ser futura
-- [ ] Limite de tentativas de reprocessamento (máximo 3 tentativas, após isso status ERROR permanente)
-
-### 🔒 Validações de Negócio
-- [ ] Não permitir duplicação de notas (CNPJ emitente + CPF/CNPJ destinatário + valor total + data)
-- [ ] Série e número da nota gerados automaticamente (série numérica, número sequencial por série)
-
-## 📡 Endpoints REST
-
-### Invoices
-- `POST /invoices` - Criar invoice
-- `GET /invoices/{id}` - Buscar por ID
-- `GET /invoices/tracking/{trackingId}` - Buscar por tracking
-- `PATCH /invoices/{id}/status` - Atualizar status
-
-## 📁 Estrutura do Projeto
-
-```
-nfe-processing-service
-└── src
-    ├── main
-    │   ├── java/br/com/nfe
-    │   │   ├── resource/              # Endpoints da API REST
-    │   │   │   ├── InvoiceResource.java
-    │   │   │   └── SupplierResource.java
-    │   │   │
-    │   │   ├── service/               # Regras de negócio
-    │   │   │   ├── InvoiceService.java
-    │   │   │   ├── InvoiceProcessor.java
-    │   │   │   └── SupplierService.java
-    │   │   │
-    │   │   ├── validator/             # Validações
-    │   │   │   ├── InvoiceValidator.java
-    │   │   │   └── CnpjValidator.java
-    │   │   │
-    │   │   ├── dto/                   # Dados de entrada/saída
-    │   │   │   ├── InvoiceRequestDTO.java
-    │   │   │   ├── InvoiceResponseDTO.java
-    │   │   │   └── SupplierDTO.java
-    │   │   │
-    │   │   ├── entity/                # Tabelas do banco
-    │   │   │   ├── Invoice.java
-    │   │   │   ├── InvoiceItem.java
-    │   │   │   └── Supplier.java
-    │   │   │
-    │   │   ├── repository/            # Acesso aos dados
-    │   │   │   ├── InvoiceRepository.java
-    │   │   │   └── SupplierRepository.java
-    │   │   │
-    │   │   ├── event/                 # Kafka (produtor/consumidor)
-    │   │   │   ├── InvoiceEvent.java
-    │   │   │   ├── InvoiceEventProducer.java
-    │   │   │   └── InvoiceEventConsumer.java
-    │   │   │
-    │   │   └── exception/             # Tratamento de erros
-    │   │       ├── InvoiceNotFoundException.java
-    │   │       ├── InvalidInvoiceException.java
-    │   │       └── GlobalExceptionHandler.java
-    │   │
-    │   └── resources
-    │       ├── application.properties
-    │       └── db/migration
-    │           └── V1__create_tables.sql
-    │
-    └── test/java/br/com/nfe
-        ├── service/
-        │   ├── InvoiceServiceTest.java
-        │   └── InvoiceProcessorTest.java
-        ├── validator/
-        │   └── CnpjValidatorTest.java
-        └── resource/
-            └── InvoiceResourceIT.java
+**Windows:**
+```cmd
+mvnw.cmd test
 ```
 
-### 🎯 O que cada camada faz
+---
 
-- **resource/** → Recebe requisições HTTP
-- **service/** → Processa a lógica de negócio
-- **validator/** → Valida CNPJ, valores, datas
-- **dto/** → Transfere dados entre camadas
-- **entity/** → Representa tabelas no banco
-- **repository/** → Salva e busca dados
-- **event/** → Publica/consome mensagens
-- **exception/** → Trata erros de forma centralizada
+## 📊 Progresso do Projeto
 
-```
-Cliente envia JSON → Resource → Service → Validações → 
-Salva no Banco → Publica no Kafka → Processa Assincronamente
-```
+### ✅ Concluído
 
-### 📝 Convenções de nomenclatura
+- [x] API REST com Quarkus (3 endpoints principais)
+- [x] Configuração multi-ambiente (application.properties)
+- [x] Ambiente (test) que executa o fluxo do sistema sem necessidade de certificado A1
+- [x] Certificado mockado para ambiente Teste (desenvolvimento sem A1)
+- [x] Geração de XML NFe com validação estrutural contra schemas XSD da Receita
+- [x] Geração de DANFE em PDF (JasperReports)
+- [x] Envio de email com anexo PDF (Quarkus Mailer)
+- [x] Entidades JPA com Hibernate Panache (Invoice, InvoiceItem)
+- [x] Testes unitários (13 testes passando com JUnit)
 
-- DTOs terminam com `DTO` (ex: `InvoiceRequestDTO`)
-- Resources terminam com `Resource` (ex: `InvoiceResource`)
-- Services terminam com `Service` (ex: `InvoiceService`)
-- Entities usam nome da entidade (ex: `Invoice`)
-- Testes terminam com `Test` ou `IT` (ex: `InvoiceServiceTest.java`)
+### 🚧 Não Testado (Requer Certificado A1 Real)
 
-## 🎯 Fases de Implementação
+- [ ] Integração total com SEFAZ (Homologação/Produção)
+- [ ] Validação oficial contra schemas XSD da Receita
+- [ ] Autorização de NFe com SEFAZ
+- [ ] Consulta de status/recibo
 
-| Fase | Descrição |
-|------|-----------|
-| **Fase 1** | Modelagem Banco
-| **Fase 2** | Testes para cada regra
-| **Fase 3** | Red Phase
-| **Fase 4** | Green phase
-| **Fase 5** | Refactor
+### 🔮 Funcionalidades Futuras
 
-## RDoc. ´How to run´ padrão (provisório)
-You can run your application in dev mode that enables live coding using:
+- [ ] PostgreSQL (substituir H2 in-memory)
+- [ ] Frontend Angular com fluxo de compra
+    - [ ] Capturar Dados reais a partir do Input 
+- [ ] Dockerização completa (Docker Compose)
+- [ ] CI/CD com GitHub Actions
+- [ ] Processamento assíncrono com Kafka
 
-```shell script
-mvn quarkus:dev
-```
+---
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## 📄 Licença
 
-## Packaging and running the application
+Este projeto está sob licença. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-The application can be packaged using:
-
-```shell script
-./mvnw package
-```
-
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/NFe-Processing-Service-API-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+---

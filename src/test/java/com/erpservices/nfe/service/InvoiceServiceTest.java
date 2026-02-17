@@ -1,4 +1,4 @@
-package com.erpservices.nfe.fiscal.xml.generator;
+package com.erpservices.nfe.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,10 +10,11 @@ import jakarta.inject.Inject;
 
 import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.fiscal.envio.SendNfe;
+import com.erpservices.nfe.fiscal.impressao.DanfeService;
+import com.erpservices.nfe.fiscal.xml.generator.XmlGenerator;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
-import com.erpservices.nfe.service.DanfeService;
 
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
@@ -22,7 +23,7 @@ import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class XmlGeneratorTest {
+public class InvoiceServiceTest {
     
     @Inject
     XmlGenerator xmlGenerator;
@@ -39,8 +40,14 @@ public class XmlGeneratorTest {
     @Inject
     DanfeService danfeService;
 
+    @Inject
+    EmailService emailService;
+
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
-    String ambiente;
+    String ambiente;   
+
+    @ConfigProperty(name = "nfe.emitente.razao-social", defaultValue = "EMPRESA GRANDE LTDA")
+    String emitenteRazaoSocial;
 
     @Test
     public void testGenerateXml() throws Exception {
@@ -53,6 +60,7 @@ public class XmlGeneratorTest {
         invoice.customerName = "Cliente Teste";
         invoice.customerEmail = "cliente@teste.com";
         invoice.totalAmount = new BigDecimal("100.00");
+        invoice.trackingId = "1920-23jk-k412-8ads";
         
         // Adicionar item
         InvoiceItem item = new InvoiceItem();
@@ -78,15 +86,30 @@ public class XmlGeneratorTest {
             // NÃO-TESTADO
             sendNfe.send(nfe, config);
         }
+        // 3. Gera DANFE
+        String caminhoArquivo = danfeService.gerarDanfe(xml, "danfe" + invoice.trackingId);
 
-        danfeService.gerarDanfe(xml, "danfezinho");
+        // 4. Enviar DANFE por email
+        String mensagem = String.format(
+            "<h2>Nota Fiscal Eletrônica</h2>" +
+            "<p>Prezado(a) %s,</p>" +
+            "<p>Segue em anexo o DANFE da NFe nº %s.</p>",
+            invoice.getCustomerName(),
+            invoice.getNfeNumber()
+        );
+
+        emailService.enviarEmailPdf(
+            invoice.getCustomerEmail(),
+            "NFe " + invoice.getNfeNumber() + " - " + emitenteRazaoSocial,
+            mensagem,
+            caminhoArquivo
+        );
 
         // Verificações básicas
         assert xml != null : "XML não deve ser nulo";
         assert xml.contains("<NFe") : "XML deve conter tag NFe";
         assert xml.contains("<infNFe") : "XML deve conter tag infNFe";
         assert xml.contains(invoice.customerCpf.replaceAll("[^0-9]", "")) : "XML deve conter CPF do cliente";
-        
-        System.out.println("XML gerado com sucesso!");
+    
     }
 }

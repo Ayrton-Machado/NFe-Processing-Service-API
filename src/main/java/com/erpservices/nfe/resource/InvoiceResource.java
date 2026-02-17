@@ -18,7 +18,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-@Path("/invoices")
+@Path("/nfe")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 
@@ -29,25 +29,26 @@ public class InvoiceResource {
     InvoiceService invoiceService;
     
     @POST
+    @Path("/create")
     public Response createInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
         InvoiceResponseDTO response = invoiceService.issueInvoice(invoiceRequest);
         return Response.accepted(response).build();
     }
 
     @GET
+    @Path("/list")
     public List<Invoice> listInvoices() {
         return Invoice.listAll();
     }
 
     @GET
-    @Path("/{id}")
-    public Response getInvoiceById(@PathParam("id") Long id) {
-        Invoice invoice = Invoice.findById(id);
+    @Path("/tracking/{trackingId}")
+    public Response getInvoiceByTrackingId(@PathParam("trackingId") String trackingId) {
+        Invoice invoice = Invoice.find("trackingId", trackingId).firstResult();
         
         if (invoice == null) {
-            // Retorna JSON com mensagem de erro
             return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Invoice not found with id: " + id))
+                    .entity(new ErrorResponse("Invoice not found with trackingId: " + trackingId))
                     .build();
         }
 

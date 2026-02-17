@@ -26,7 +26,7 @@ public class InvoiceItem extends PanacheEntity {
     public BigDecimal unitPrice;
     
     @Column(name = "total_price", nullable = false, precision = 10, scale = 2)
-    public BigDecimal totalPrice;  // ✅ quantity × unitPrice (SEM desconto)
+    public BigDecimal totalPrice;  // quantity × unitPrice (SEM desconto)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)

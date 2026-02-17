@@ -13,6 +13,7 @@ import com.erpservices.nfe.dto.InvoiceRequestDTO;
 import com.erpservices.nfe.dto.InvoiceResponseDTO;
 import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.fiscal.envio.SendNfe;
+import com.erpservices.nfe.fiscal.impressao.DanfeService;
 import com.erpservices.nfe.fiscal.xml.generator.XmlGenerator;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
@@ -45,14 +46,22 @@ public class InvoiceService {
     @Inject
     DanfeService danfeService;
 
+    @Inject
+    EmailService emailService;
+
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
     String ambiente;
+
+    
+    @ConfigProperty(name = "nfe.emitente.razao-social", defaultValue = "EMPRESA GRANDE LTDA")
+    String emitenteRazaoSocial;
+    
 
     private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
     /**
      * Emite uma nota fiscal eletrônica (NFe).
-     * Método principal que cria a invoice, gera o XML, valida e envia para a SEFAZ.
+     * Orquestra o fluxo da NFe: Preenche objeto NFe -> Processa NFe (Gera e Valida XML) -> Gera DANFE -> Enviar por email.
      * 
      * @param invoiceRequest DTO com os dados da requisição da nota fiscal
      * @return InvoiceResponseDTO com dados de rastreamento e confirmação de emissão
@@ -62,20 +71,41 @@ public class InvoiceService {
         // 1. Cria e persiste a Invoice
         Invoice invoice = preencheInvoice(invoiceRequest);
 
-        // Monta resposta para o cliente
-        String trackingId = UUID.randomUUID().toString();
-        InvoiceResponseDTO response = new InvoiceResponseDTO();
-        response.trackingId = trackingId;
-        response.issueDate = invoice.issueDate;
-        response.message = "Pedido Confirmado";
         
         // 2. Processa (gera XML, valida e envia)
         String xml = processInvoice(invoice);
-
+        
         // 3. Gera DANFE
-        danfeService.gerarDanfe(xml, "danfe" + trackingId);
+        String caminhoArquivo = danfeService.gerarDanfe(xml, "danfe" + invoice.trackingId);
+
+        // Monta resposta para o cliente
+        InvoiceResponseDTO response = new InvoiceResponseDTO();
+        response.trackingId = invoice.trackingId;
+        response.issueDate = invoice.issueDate;
+        response.message = "Pedido Confirmado";
+        
+        // 4. Envia Email
+        enviarDanfe(invoice, caminhoArquivo);
 
         return response;
+    }
+
+    private void enviarDanfe(Invoice invoice, String caminhoArquivo) {
+        // 4. Enviar DANFE por email
+        String mensagem = String.format(
+            "<h2>Nota Fiscal Eletrônica</h2>" +
+            "<p>Prezado(a) %s,</p>" +
+            "<p>Segue em anexo o DANFE da NFe nº %s.</p>",
+            invoice.getCustomerName(),
+            invoice.getNfeNumber()
+        );
+
+        emailService.enviarEmailPdf(
+            invoice.getCustomerEmail(),
+            "NFe " + invoice.getNfeNumber() + " - " + emitenteRazaoSocial,
+            mensagem,
+            caminhoArquivo
+        );
     }
 
     private String processInvoice(Invoice invoice) throws Exception {
@@ -86,9 +116,7 @@ public class InvoiceService {
         TNFe nfe = xmlGenerator.generate(invoice, config);
         String xml = XmlNfeUtil.objectToXml(nfe);
 
-        // TODO: Deve enviar email após resposta do sistema
-        
-        // Debug: Salvar XML em arquivo para inspeção
+        // Exibe XML em log
         System.out.println("=== XML GERADO ===");
         System.out.println(xml);
         System.out.println("================== \n");
@@ -110,6 +138,7 @@ public class InvoiceService {
         // Gera dados de controle
         String invoiceNumber = generateInvoiceNumber();
         LocalDateTime issueDate = LocalDateTime.now();
+        String trackingId = UUID.randomUUID().toString();
 
         // Cria entidade Invoice
         Invoice invoice = new Invoice();
@@ -119,6 +148,7 @@ public class InvoiceService {
         invoice.customerCpf = invoiceRequest.customerCpf;
         invoice.customerName = invoiceRequest.customerName;
         invoice.customerEmail = invoiceRequest.customerEmail;
+        invoice.trackingId = trackingId;
 
         // Cria items
         BigDecimal totalAmount = BigDecimal.ZERO;

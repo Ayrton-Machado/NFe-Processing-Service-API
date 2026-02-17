@@ -95,19 +95,12 @@ public class XmlGenerator {
      * @return TNFe objeto da nota fiscal eletrônica
      */
     public TNFe generate(Invoice invoice, ConfiguracoesNfe config) throws Exception {
-        //Informe o Numero da NFe
         int numeroNfe = invoice.id.intValue();
-        //Informe o CNPJ do Emitente da NFe
         String cnpj = emitenteCnpj;
-        //Informe a data de Emissao da NFe
         LocalDateTime dataEmissao = invoice.issueDate;
-        //Informe o cnf da NFCe com 8 digitos
         String cnf = String.format("%08d", new Random().nextInt(99999999));
-        //Informe o modelo da NFe
         String modelo = DocumentoEnum.NFE.getModelo();
-        //Informe a Serie da NFe
         int serie = 1;
-        //Informe o tipo de Emissao da NFe
         String tipoEmissao = "1";
 
         // MontaChave a NFe
@@ -115,6 +108,7 @@ public class XmlGenerator {
         String chave = chaveUtil.getChaveNF();
         String cdv = chaveUtil.getDigitoVerificador();
 
+        // Monta Informe da NFe
         InfNFe infNFe = new InfNFe();
         infNFe.setId(chave);
         infNFe.setVersao(ConstantesUtil.VERSAO.NFE);
@@ -141,15 +135,17 @@ public class XmlGenerator {
         // Preenche dados Pagamento
         infNFe.setPag(preenchePag());
 
+        // Preenche informacões adicionais
         infNFe.setInfAdic(montaInfAdic());
 
         //Preenche as Informações de Intermediador
         infNFe.setInfIntermed(montaInfInterm());
 
+        // Monta objeto da NFe
         TNFe nfe = new TNFe();
         nfe.setInfNFe(infNFe);
         
-        // Adiciona informações suplementares (QR Code para NFC-e)
+        // Adiciona informações suplementares
         nfe.setInfNFeSupl(montaInfNFeSupl(chave));
 
         // Imprime XML gerado (apenas para debug)

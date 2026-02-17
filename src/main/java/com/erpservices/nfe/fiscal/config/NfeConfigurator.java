@@ -37,23 +37,27 @@ public class NfeConfigurator {
      * ATENÇÃO: Certificado mock usado apenas em teste.
      * Para produção e homologacao, configure certificado real via variáveis de ambiente.
      */
+    /**
+     * Inicializa configurações da NFe.
+     * Em ambiente test: usa certificado mock.
+     * Em homolog/prod: usa certificado configurado via variáveis de ambiente.
+     */
     public ConfiguracoesNfe initConfigNfe(EstadosEnum estado, String ambienteStr) throws Exception {
         AmbienteEnum ambiente = getAmbiente(ambienteStr);
         Certificado certificado;
         
         if (ambienteStr.equals("prod") || ambienteStr.equals("homolog")) {
-            // Lê diretamente das variáveis de ambiente (não expõe em logs/parâmetros)
-            String certPath = System.getenv("NFE_CERT_PATH");
-            String certPassword = System.getenv("NFE_CERT_PASSWORD");
+            String certificadoCaminho = System.getenv("NFE_CERT_PATH");
+            String certificadoSenha = System.getenv("NFE_CERT_PASSWORD");
             
-            if (certPath == null || certPath.isEmpty() || certPassword == null || certPassword.isEmpty()) {
+            if (certificadoCaminho == null || certificadoCaminho.isEmpty() || certificadoSenha == null || certificadoSenha.isEmpty()) {
                 throw new IllegalStateException(
                     String.format("Certificado digital não configurado para ambiente '%s'. " +
                         "Configure as variáveis de ambiente NFE_CERT_PATH e NFE_CERT_PASSWORD", ambienteStr)
                 );
             }
             
-            certificado = CertificadoService.certificadoPfx(certPath, certPassword);
+            certificado = CertificadoService.certificadoPfx(certificadoCaminho, certificadoSenha);
         } else {
             certificado = createMockCertificado(emitenteCnpj);
         }

@@ -1,4 +1,4 @@
-package com.erpservices.nfe.service;
+package com.erpservices.nfe.fiscal.impressao;
 
 import br.com.swconsultoria.nfe.impressao.ImpressaoDTO;
 import br.com.swconsultoria.nfe.impressao.ImpressaoNfeUtil;
@@ -16,15 +16,13 @@ public class DanfeService {
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
     String ambiente;
     /**
-     * Gera o DANFE (PDF) a partir do XML da NFe autorizada.
+     * Gera o DANFE (PDF) a partir do XML.
      * 
-     * @param xml XML completo com protocolo de autorização
-     * @param nomeArquivo Nome do arquivo PDF a ser gerado (ex: "danfe-123456.pdf")
+     * @param xml XML completo com protocolo de autorização (para testes aponta para xml nao assinada com MOCKED_PATH_NFE)
+     * @param nomeArquivo Nome do arquivo PDF a ser gerado (ex: "danfe123456.pdf")
      * @return Caminho completo do arquivo gerado, ou null em caso de erro
      */
 
-    // Trabalhar na criacao de xml protocolado para montagem correta do DANFE
-    // Entender porque não retorna o erro no teste
     public String gerarDanfe(String xml, String nomeArquivo) {
         try {
             // Define caminho completo do arquivo
@@ -50,7 +48,7 @@ public class DanfeService {
             // Exporta para PDF
             ImpressaoNfeUtil.impressaoPdfArquivo(impressao, caminhoCompleto);
             
-            System.out.println("DANFE gerado com sucesso: " + caminhoCompleto);
+            System.out.println("DANFE gerado com sucesso, caminho: " + caminhoCompleto);
 
             return caminhoCompleto;
             
@@ -59,10 +57,5 @@ public class DanfeService {
             e.printStackTrace();
             return null;
         }
-    }
-
-    public String nfeResumida(String xml, String nomeArquivo) {
-
-        return "";
     }
 }

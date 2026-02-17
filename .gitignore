@@ -38,6 +38,10 @@ nb-configuration.xml
 
 # Local environment
 .env
+.danfes/
+
+# Generated DANFE PDFs
+src/main/resources/danfes/*.pdf
 
 # Plugin directory
 /.quarkus/cli/plugins/

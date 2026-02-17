@@ -24,6 +24,9 @@ public class Invoice extends PanacheEntity {
     
     @Column(nullable = false, length = 20)
     public String status; // RECEIVED, PROCESSING, COMPLETED, ERROR
+
+    @Column(nullable = false)
+    public String trackingId;
     
     // ====== VALOR PRINCIPAL ======
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
@@ -44,4 +47,27 @@ public class Invoice extends PanacheEntity {
     @JsonManagedReference
     public List<InvoiceItem> items;
 
+    public String getNfeNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
 }

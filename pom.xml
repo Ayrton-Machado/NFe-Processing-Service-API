@@ -94,6 +94,10 @@
             <artifactId>jasperreports</artifactId>
             <version>6.21.3</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mailer</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
