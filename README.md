@@ -7,7 +7,7 @@
 
 > **API REST para processamento de Notas Fiscais Eletrônicas (NFe)** com integração à biblioteca Java-NFe.
 > 
-> Arquitetura em camadas com separação de responsabilidades, configuração multi-ambiente e geração automática de DANFE com envio por e-mail.
+> Arquitetura com separação de responsabilidades, configuração multi-ambiente, geração e validação XML contra .xsd oficial e montagem automática de DANFE com envio por e-mail.
 
 ---
 
