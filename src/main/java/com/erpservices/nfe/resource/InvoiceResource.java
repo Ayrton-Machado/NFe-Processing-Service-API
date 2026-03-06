@@ -54,6 +54,20 @@ public class InvoiceResource {
 
         return Response.ok(invoice).build();
     }
+
+    @GET
+    @Path("/tracking/{trackingId}/xml")
+    public Response getXmlByTrackingId(@PathParam("trackingId") String trackingId) {
+        Invoice invoice = Invoice.find("trackingId", trackingId).firstResult();
+        
+        if (invoice == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorResponse("Invoice XML not found with trackingId: " + trackingId))
+                    .build();
+        }
+
+        return Response.ok(invoice.invoiceXml).build();
+    }
     
     // Classe interna para erro
     public static class ErrorResponse {

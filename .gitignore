@@ -47,3 +47,4 @@ src/main/resources/danfes/*.pdf
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+/aws

@@ -1,12 +1,11 @@
 package com.erpservices.nfe.service;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.erpservices.nfe.dto.InvoiceItemRequestDTO;
 import com.erpservices.nfe.dto.InvoiceRequestDTO;
@@ -15,17 +14,20 @@ import com.erpservices.nfe.fiscal.config.NfeConfigurator;
 import com.erpservices.nfe.fiscal.envio.SendNfe;
 import com.erpservices.nfe.fiscal.impressao.DanfeService;
 import com.erpservices.nfe.fiscal.xml.generator.XmlGenerator;
+import com.erpservices.nfe.fiscal.xml.generator.XmlGeneratorResult;
 import com.erpservices.nfe.fiscal.xml.validator.XmlValidator;
 import com.erpservices.nfe.model.Invoice;
 import com.erpservices.nfe.model.InvoiceItem;
+import com.erpservices.nfe.model.InvoiceXml;
+import com.erpservices.nfe.s3.service.S3Service;
 
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.dom.enuns.EstadosEnum;
-import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
@@ -49,15 +51,18 @@ public class InvoiceService {
     @Inject
     EmailService emailService;
 
+    @Inject
+    S3Service s3Service;
+
+    @Inject
+    jakarta.persistence.EntityManager em;
+
     @ConfigProperty(name = "nfe.ambiente", defaultValue = "test")
     String ambiente;
 
     
     @ConfigProperty(name = "nfe.emitente.razao-social", defaultValue = "EMPRESA GRANDE LTDA")
     String emitenteRazaoSocial;
-    
-
-    private static final AtomicLong invoiceCounter = new AtomicLong(1);
 
     /**
      * Emite uma nota fiscal eletrônica (NFe).
@@ -68,12 +73,18 @@ public class InvoiceService {
      */
     @Transactional
     public InvoiceResponseDTO issueInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
-        // 1. Cria e persiste a Invoice
+        // 1. Cria e preenche a Invoice com dados do POST
         Invoice invoice = preencheInvoice(invoiceRequest);
 
-        
         // 2. Processa (gera XML, valida e envia)
         String xml = processInvoice(invoice);
+
+        // Persiste XML no S3
+        byte[] xmlBytes = xml.getBytes(StandardCharsets.UTF_8);
+        s3Service.uploadXmlToS3(xmlBytes, invoice.getInvoiceXml().getChaveAcesso());
+
+        // Presiste Invoice no Banco
+        invoice.persist();
         
         // 3. Gera DANFE
         String caminhoArquivo = danfeService.gerarDanfe(xml, "danfe" + invoice.trackingId);
@@ -91,7 +102,7 @@ public class InvoiceService {
     }
 
     private void enviarDanfe(Invoice invoice, String caminhoArquivo) {
-        // 4. Enviar DANFE por email
+        // Enviar DANFE por email
         String mensagem = String.format(
             "<h2>Nota Fiscal Eletrônica</h2>" +
             "<p>Prezado(a) %s,</p>" +
@@ -112,14 +123,17 @@ public class InvoiceService {
         // Criar Configuração da NFE
         ConfiguracoesNfe config = nfeConfigurator.initConfigNfe(EstadosEnum.PR, ambiente);
 
-        // Gera Objeto Nfe
-        TNFe nfe = xmlGenerator.generate(invoice, config);
-        String xml = XmlNfeUtil.objectToXml(nfe);
+        // Gera Objeto Nfe e extrai chave 44 digitos
+        XmlGeneratorResult result = xmlGenerator.generate(invoice, config);
+        String xml = XmlNfeUtil.objectToXml(result.tNFe);
 
-        // Exibe XML em log
-        System.out.println("=== XML GERADO ===");
-        System.out.println(xml);
-        System.out.println("================== \n");
+        // Cria e vincula InvoiceXml com a chave de acesso
+        InvoiceXml invoiceXml = new InvoiceXml();
+        invoiceXml.chaveAcesso = result.chaveAcessoNfe;
+        invoiceXml.uploadedAt = LocalDateTime.now();
+        invoiceXml.sefazStatus = "PENDENTE";
+        invoiceXml.invoice = invoice;
+        invoice.invoiceXml = invoiceXml;
 
         // Valida Estrutura Xml com .xsd 
         xmlValidator.validate(xml);
@@ -128,7 +142,7 @@ public class InvoiceService {
         if (ambiente.equals("prod") || ambiente.equals("homolog")) {
             // Envia NFE para Sefaz através do webservice (Envio exige certificado A1) 
             // NÃO-TESTADO
-            sendNfe.send(nfe, config);
+            sendNfe.send(result.tNFe, config);
         }
 
         return xml;
@@ -136,7 +150,7 @@ public class InvoiceService {
 
     private Invoice preencheInvoice(InvoiceRequestDTO invoiceRequest) throws Exception {
         // Gera dados de controle
-        String invoiceNumber = generateInvoiceNumber();
+        Long invoiceNumber = generateInvoiceNumber();
         LocalDateTime issueDate = LocalDateTime.now();
         String trackingId = UUID.randomUUID().toString();
 
@@ -169,19 +183,14 @@ public class InvoiceService {
         invoice.items = items;
         invoice.totalAmount = totalAmount;
 
-        // Persiste no banco
-        invoice.persist();
-
         // Retorna NFE crua
         return invoice;
     }
 
-    private String generateInvoiceNumber() {
-        LocalDateTime now = LocalDateTime.now();
-        String datePart = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long sequence = invoiceCounter.getAndIncrement();
-
-        // Formato: YYYYMMDD-NNNNNN (ex: 20260205-000001)
-        return String.format("%s-%06d", datePart, sequence);
-    }
+    private Long generateInvoiceNumber() {
+        return ((Number) em
+            .createNativeQuery("SELECT nextval('nfe_numero_seq')")
+            .getSingleResult())
+            .longValue();
+        }
 }

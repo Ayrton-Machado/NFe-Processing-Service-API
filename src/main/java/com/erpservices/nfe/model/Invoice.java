@@ -16,8 +16,8 @@ public class Invoice extends PanacheEntity {
     
     // ====== IDENTIFICAÇÃO ======
     @Column(name = "invoice_number", length = 50)
-    public String number;
-    
+    public Long number;
+
     @Column(name = "issue_date")
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss")
     public LocalDateTime issueDate;
@@ -47,11 +47,20 @@ public class Invoice extends PanacheEntity {
     @JsonManagedReference
     public List<InvoiceItem> items;
 
-    public String getNfeNumber() {
+    @OneToOne(mappedBy = "invoice", cascade = CascadeType.ALL)
+    @JsonManagedReference("invoice-xml")
+    public InvoiceXml invoiceXml;
+
+    
+    public InvoiceXml getInvoiceXml() {
+        return invoiceXml;
+    }
+
+    public Long getNfeNumber() {
         return number;
     }
 
-    public void setNumber(String number) {
+    public void setNumber(Long number) {
         this.number = number;
     }
 

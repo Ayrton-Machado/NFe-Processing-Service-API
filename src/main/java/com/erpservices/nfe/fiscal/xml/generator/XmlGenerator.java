@@ -94,8 +94,8 @@ public class XmlGenerator {
      * @param invoice a invoice contendo os dados da nota fiscal
      * @return TNFe objeto da nota fiscal eletrônica
      */
-    public TNFe generate(Invoice invoice, ConfiguracoesNfe config) throws Exception {
-        int numeroNfe = invoice.id.intValue();
+    public XmlGeneratorResult generate(Invoice invoice, ConfiguracoesNfe config) throws Exception {
+        int numeroNfe = invoice.number.intValue();
         String cnpj = emitenteCnpj;
         LocalDateTime dataEmissao = invoice.issueDate;
         String cnf = String.format("%08d", new Random().nextInt(99999999));
@@ -142,16 +142,18 @@ public class XmlGenerator {
         infNFe.setInfIntermed(montaInfInterm());
 
         // Monta objeto da NFe
-        TNFe nfe = new TNFe();
-        nfe.setInfNFe(infNFe);
+        TNFe tnfe = new TNFe();
+        tnfe.setInfNFe(infNFe);
         
         // Adiciona informações suplementares
-        nfe.setInfNFeSupl(montaInfNFeSupl(chave));
+        tnfe.setInfNFeSupl(montaInfNFeSupl(chave));
 
         // Imprime XML gerado (apenas para debug)
-        System.out.println(XmlNfeUtil.objectToXml(nfe));
+        System.out.println(XmlNfeUtil.objectToXml(tnfe));
 
-        return nfe;
+        String chaveAcesso44 = chave.startsWith("NFe") ? chave.substring(3) : chave;
+
+        return new XmlGeneratorResult(tnfe, chaveAcesso44);
     }
     
 

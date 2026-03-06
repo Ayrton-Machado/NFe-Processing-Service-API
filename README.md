@@ -61,7 +61,14 @@ git clone https://github.com/Ayrton-Machado/NFe-Processing-Service-API
 cd NFe-Processing-Service-API
 ```
 
-### 2. Execute a aplicação
+### 2.1 Iniciar Banco Postgre
+
+**Linux / macOS:**
+```bash
+docker compose up
+```
+
+### 2.2 Execute a aplicação
 
 **Linux / macOS:**
 ```bash
@@ -118,18 +125,39 @@ mvnw.cmd test
 ### 🚧 Não Testado (Requer Certificado A1 Real)
 
 - [ ] Integração total com SEFAZ (Homologação/Produção)
-- [ ] Validação oficial contra schemas XSD da Receita
+- [ ] Validação de XML assinada contra schemas XSD da Receita
 - [ ] Autorização de NFe com SEFAZ
-- [ ] Consulta de status/recibo
+
+### 📌 To-Do
+
+- [ ] Atualizar Readme Sempre
+
+- [X] Adicionar Dockerização
+- [X] Migrar de H2 para PostgreSQL
+
+- [X] Persistir XMLs gerados (S3)
+- [ ] Utilizar pdf_byte e apenas enviar DANFE gerado por email, sem persisti-lo 
+
+- [ ] Exigir dados pelo POST para validação e inserção no XML
+
+- [ ] Calcular Imposto Automaticamente
+
+- [ ] Criar validação dos dados + testes de validação
+- [ ] Criar/refatorar endpoints
+
+- [ ] Implementar autenticação JWT
+
+- [ ] Configurar GitHub Actions
+
+- [ ] Implementar métricas e observabilidade completa
+
+- [ ] Implementar filas com RabbitMQ ou Kafka
+
+- [ ] Preparar para deploy em nuvem
 
 ### 🔮 Funcionalidades Futuras
 
-- [ ] PostgreSQL (substituir H2 in-memory)
-- [ ] Frontend Angular com fluxo de compra
-    - [ ] Capturar Dados reais a partir do Input 
-- [ ] Dockerização completa (Docker Compose)
-- [ ] CI/CD com GitHub Actions
-- [ ] Processamento assíncrono com Kafka
+- [ ] Integrar Frontend Angular para demonstrar fluxo com inputs
 
 ---
 

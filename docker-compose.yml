@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16
+    healthcheck:
+      test: pg_isready -U ${DB_USERNAME:-user} -d nfe-processing
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234}
+      POSTGRES_DB: nfe-processing
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+  localstack-setup:
+    image: localstack/localstack:latest
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-sa-east-1}
+    entrypoint: >
+      awslocal --endpoint-url=http://localstack:4566 s3 mb s3://s3-nfe-bucket
