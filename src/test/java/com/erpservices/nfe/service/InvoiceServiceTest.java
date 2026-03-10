@@ -31,6 +31,13 @@ public class InvoiceServiceTest {
         request.customerCpf = "12345678901";
         request.customerName = "Cliente Teste";
         request.customerEmail = "cliente@teste.com";
+        request.customerState = "SP";
+        request.customerStreet = "Rua Teste";
+        request.customerNumber = "100";
+        request.customerDistrict = "Bairro Teste";
+        request.customerCity = "São Paulo";
+        request.customerCityCode = "3550308";
+        request.customerZipCode = "01001000";
 
         InvoiceItemRequestDTO item = new InvoiceItemRequestDTO();
         item.productCode = "PROD001";

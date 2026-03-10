@@ -42,6 +42,28 @@ public class Invoice extends PanacheEntity {
     @Column(name = "customer_email", nullable = false)
     public String customerEmail;
     
+    // ======= ENDEREÇO DESTINATÁRIO =======
+    @Column(name = "customer_street", nullable = false, length = 60)
+    public String customerStreet;       // <xLgr> — logradouro. Ex: "Rua das Flores"
+
+    @Column(name = "customer_number", nullable = false, length = 60)
+    public String customerNumber;       // <nro> — número. Ex: "123" ou "S/N"
+
+    @Column(name = "customer_district", nullable = false, length = 60)
+    public String customerDistrict;     // <xBairro> — bairro. Ex: "Centro"
+
+    @Column(name = "customer_city_code", nullable = false, length = 7)
+    public String customerCityCode;     // <cMun> — código IBGE. Ex: "5219753"
+
+    @Column(name = "customer_city", nullable = false, length = 60)
+    public String customerCity;         // <xMun> — nome do município. Ex: "Goiânia"
+
+    @Column(name = "customer_state", nullable = false, length = 2)
+    public String customerState;        // <UF> — sigla do estado. Ex: "GO"
+
+    @Column(name = "customer_zip_code", nullable = false, length = 8)
+    public String customerZipCode;      // <CEP> — apenas números. Ex: "74000000"
+
     // ====== RELACIONAMENTOS ======
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

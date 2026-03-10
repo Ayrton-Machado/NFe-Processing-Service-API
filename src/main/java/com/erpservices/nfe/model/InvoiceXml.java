@@ -35,6 +35,4 @@ public class InvoiceXml extends PanacheEntity {
     public String getChaveAcesso() {
         return chaveAcesso;
     }
-
-    
 }

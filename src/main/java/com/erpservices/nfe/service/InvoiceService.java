@@ -81,7 +81,8 @@ public class InvoiceService {
 
         // Persiste XML no S3
         byte[] xmlBytes = xml.getBytes(StandardCharsets.UTF_8);
-        s3Service.uploadXmlToS3(xmlBytes, invoice.getInvoiceXml().getChaveAcesso());
+        String s3Key = s3Service.uploadXmlToS3(xmlBytes, invoice.getInvoiceXml().getChaveAcesso());
+        invoice.getInvoiceXml().xmlS3Key = s3Key;
 
         // Presiste Invoice no Banco
         invoice.persist();
@@ -162,6 +163,13 @@ public class InvoiceService {
         invoice.customerCpf = invoiceRequest.customerCpf;
         invoice.customerName = invoiceRequest.customerName;
         invoice.customerEmail = invoiceRequest.customerEmail;
+        invoice.customerStreet = invoiceRequest.customerStreet;
+        invoice.customerNumber = invoiceRequest.customerNumber;
+        invoice.customerDistrict = invoiceRequest.customerDistrict;
+        invoice.customerCityCode = invoiceRequest.customerCityCode;
+        invoice.customerCity = invoiceRequest.customerCity;
+        invoice.customerState = invoiceRequest.customerState;
+        invoice.customerZipCode = invoiceRequest.customerZipCode;
         invoice.trackingId = trackingId;
 
         // Cria items

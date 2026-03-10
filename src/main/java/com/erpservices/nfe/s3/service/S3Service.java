@@ -10,7 +10,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @ApplicationScoped
@@ -22,13 +21,14 @@ public class S3Service {
     @Inject
     private S3Client s3;
 
-    public PutObjectResponse uploadXmlToS3(byte[] xml, String chaveAcesso) {
+    public String uploadXmlToS3(byte[] xml, String chaveAcesso) {
         String nomeArquivo = "nfe/" + chaveAcesso + ".xml";
-        return s3.putObject(PutObjectRequest.builder()
+        s3.putObject(PutObjectRequest.builder()
                         .bucket(bucketName)
                         .key(nomeArquivo)
                         .contentType("application/xml")
                         .build(), RequestBody.fromBytes(xml));
+        return nomeArquivo;
     }
 
     public List<S3Object> listS3Objects() {
