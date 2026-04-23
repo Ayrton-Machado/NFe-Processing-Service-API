@@ -180,12 +180,13 @@ mvnw.cmd test
 
 - [X] Calcular Impostos Automaticamente
     - [X] Corrigir DANFE para retornar impostos da nota (atualmente todos zerados)
+    
+- [ ] Implementar autenticação JWT
 
 - [ ] Criar validação dos dados + testes de validação
 - [ ] Criar/refatorar endpoints
     - [ ] Implementar busca do XML no bucket pelo endpoint "/nfe/tracking/{id}/xml"
 
-- [ ] Implementar autenticação JWT
 
 - [ ] Configurar GitHub Actions
 

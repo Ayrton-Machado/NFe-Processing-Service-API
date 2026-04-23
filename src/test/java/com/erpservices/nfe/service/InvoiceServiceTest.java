@@ -1,17 +1,19 @@
 package com.erpservices.nfe.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import jakarta.inject.Inject;
 
 import com.erpservices.nfe.dto.InvoiceItemRequestDTO;
 import com.erpservices.nfe.dto.InvoiceRequestDTO;
 import com.erpservices.nfe.dto.InvoiceResponseDTO;
 
-import static org.junit.jupiter.api.Assertions.*;
 import io.quarkus.test.junit.QuarkusTest;
+
+import jakarta.inject.Inject;
 
 @QuarkusTest
 public class InvoiceServiceTest {
